@@ -1,0 +1,16 @@
+# Cache données (téléchargé automatiquement au 1er lancement)
+data/raw/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Streamlit
+.streamlit/secrets.toml
+
+# macOS
+.DS_Store
