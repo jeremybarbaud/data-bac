@@ -9,6 +9,8 @@ Sources :
 """
 
 import hashlib
+import re
+from html import escape as _esc
 
 import pandas as pd
 import plotly.express as px
@@ -67,6 +69,25 @@ def _absent_msg(prenom: str) -> str:
     return ABSENT_MSGS[idx].format(p=prenom)
 
 
+# ── Validation d'entrée (sécurité) ───────────────────────────────────────────
+
+_PRENOM_MAX_LEN = 60
+_PRENOM_ALLOWED = re.compile(r"[^A-Za-zÀ-ÖØ-öø-ÿ' \-]")
+
+
+def _sanitize_prenom(raw: str) -> str:
+    """Nettoie une saisie utilisateur avant usage :
+      - strip + troncature à 60 caractères
+      - whitelist : lettres Unicode latines, apostrophe, tiret, espace
+    Retourne une chaîne vide si la saisie ne contient aucun caractère valide.
+    """
+    if not raw:
+        return ""
+    s = str(raw).strip()[:_PRENOM_MAX_LEN]
+    s = _PRENOM_ALLOWED.sub("", s)
+    return s
+
+
 # ── Chargement des données (mis en cache) ────────────────────────────────────
 
 @st.cache_data(show_spinner="Chargement des données bac…")
@@ -116,7 +137,23 @@ def get_geojson() -> dict:
 # ── Chargement initial ────────────────────────────────────────────────────────
 
 long, scores = get_data()
-all_prenoms = sorted(scores["prenom"].tolist())
+
+
+@st.cache_data(show_spinner=False)
+def _get_all_prenoms(prenoms_tuple: tuple) -> list[str]:
+    """Liste triée des prénoms — mise en cache pour éviter un sort à chaque rerun."""
+    return sorted(prenoms_tuple)
+
+
+all_prenoms = _get_all_prenoms(tuple(scores["prenom"]))
+
+
+def _suggest(prefix: str, limit: int = 8) -> list[str]:
+    """Suggestions de prénoms partageant les 3 premières lettres."""
+    if not prefix:
+        return []
+    p = prefix[:3].lower()
+    return [n for n in all_prenoms if n.lower().startswith(p)][:limit]
 
 # ── Onglets ───────────────────────────────────────────────────────────────────
 
@@ -128,104 +165,116 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "Palmarès",
 ])
 
+# Streamlit ≥ 1.37 : @st.fragment isole les reruns à l'onglet courant.
+# Fallback no-op sur versions antérieures.
+_fragment = getattr(st, "fragment", lambda f: f)
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — ANTHOLOGIE
 # ══════════════════════════════════════════════════════════════════════════════
 
-with tab1:
-    prenom_input = st.text_input(
+@_fragment
+def _render_tab_anthologie() -> None:
+    raw = st.text_input(
         "Votre prénom",
         placeholder="ex : Apolline, Sofiane, Gaëtan…",
         key="tab1_input",
+        max_chars=_PRENOM_MAX_LEN,
     )
+    prenom_input = _sanitize_prenom(raw)
 
     if not prenom_input:
         st.markdown(hero_html(), unsafe_allow_html=True)
+        return
 
+    result = lookup(prenom_input, long, scores)
+
+    if result is None:
+        close = _suggest(prenom_input, limit=8)
+        st.markdown(
+            absent_card_html(prenom_input, _absent_msg(prenom_input), close),
+            unsafe_allow_html=True,
+        )
     else:
-        result = lookup(prenom_input, long, scores)
+        st.markdown(result_card_html(result), unsafe_allow_html=True)
+        st.markdown(verdict_card_html(result), unsafe_allow_html=True)
 
-        if result is None:
-            close = [p for p in all_prenoms if p.lower().startswith(prenom_input[:3].lower())][:8]
-            st.markdown(
-                absent_card_html(prenom_input, _absent_msg(prenom_input), close),
-                unsafe_allow_html=True,
+        # Courbe d'évolution
+        hist_df = pd.DataFrame(result["history"])
+        if not hist_df.empty and "proptb" in hist_df.columns:
+            nat_avg = get_nat_avg(long)
+
+            fig = go.Figure()
+
+            fig.add_trace(go.Scatter(
+                x=nat_avg["year"],
+                y=nat_avg["proptb_nat"],
+                mode="lines",
+                name="Moyenne nationale",
+                line=dict(color="rgba(197,197,213,0.6)", width=1.5, dash="dot"),
+                fill="tozeroy",
+                fillcolor="rgba(197,197,213,0.08)",
+                hovertemplate="%{y:.1f} %<extra>Moy. nationale</extra>",
+            ))
+
+            fig.add_trace(go.Scatter(
+                x=hist_df["year"],
+                y=hist_df["proptb"],
+                mode="lines+markers",
+                name=result["prenom"],
+                line=dict(color=PRIMARY, width=2.5),
+                marker=dict(
+                    size=8,
+                    color=SECONDARY,
+                    line=dict(width=2, color=SURFACE),
+                    symbol="diamond",
+                ),
+                hovertemplate="%{y:.1f} %<extra>" + _esc(str(result["prenom"])) + "</extra>",
+            ))
+
+            fig.update_layout(
+                paper_bgcolor=SURFACE,
+                plot_bgcolor=SURFACE,
+                title=dict(
+                    text=f"Évolution du % mention Très Bien — {_esc(str(result['prenom']))} {_esc(str(result['sexe_label']))}",
+                    font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
+                    x=0, xanchor="left",
+                ),
+                xaxis=dict(
+                    title="", tickformat="d", dtick=1,
+                    showgrid=False, zeroline=False, showline=False,
+                    tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
+                ),
+                yaxis=dict(
+                    title="% Mention TB",
+                    rangemode="tozero",
+                    showgrid=True, gridcolor="rgba(197,197,213,0.25)",
+                    zeroline=False, showline=False,
+                    tickformat=".0f", ticksuffix=" %",
+                    tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
+                ),
+                legend=dict(
+                    orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="right", x=1,
+                    font=dict(family="Inter, sans-serif", size=11),
+                ),
+                hovermode="x unified",
+                height=360,
             )
-        else:
-            st.markdown(result_card_html(result), unsafe_allow_html=True)
-            st.markdown(verdict_card_html(result), unsafe_allow_html=True)
+            st.plotly_chart(fig, use_container_width=True)
 
-            # Courbe d'évolution
-            hist_df = pd.DataFrame(result["history"])
-            if not hist_df.empty and "proptb" in hist_df.columns:
-                nat_avg = get_nat_avg(long)
 
-                fig = go.Figure()
-
-                fig.add_trace(go.Scatter(
-                    x=nat_avg["year"],
-                    y=nat_avg["proptb_nat"],
-                    mode="lines",
-                    name="Moyenne nationale",
-                    line=dict(color="rgba(197,197,213,0.6)", width=1.5, dash="dot"),
-                    fill="tozeroy",
-                    fillcolor="rgba(197,197,213,0.08)",
-                    hovertemplate="%{y:.1f} %<extra>Moy. nationale</extra>",
-                ))
-
-                fig.add_trace(go.Scatter(
-                    x=hist_df["year"],
-                    y=hist_df["proptb"],
-                    mode="lines+markers",
-                    name=result["prenom"],
-                    line=dict(color=PRIMARY, width=2.5),
-                    marker=dict(
-                        size=8,
-                        color=SECONDARY,
-                        line=dict(width=2, color=SURFACE),
-                        symbol="diamond",
-                    ),
-                    hovertemplate="%{y:.1f} %<extra>" + result["prenom"] + "</extra>",
-                ))
-
-                fig.update_layout(
-                    paper_bgcolor=SURFACE,
-                    plot_bgcolor=SURFACE,
-                    title=dict(
-                        text=f"Évolution du % mention Très Bien — {result['prenom']} {result['sexe_label']}",
-                        font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
-                        x=0, xanchor="left",
-                    ),
-                    xaxis=dict(
-                        title="", tickformat="d", dtick=1,
-                        showgrid=False, zeroline=False, showline=False,
-                        tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
-                    ),
-                    yaxis=dict(
-                        title="% Mention TB",
-                        rangemode="tozero",
-                        showgrid=True, gridcolor="rgba(197,197,213,0.25)",
-                        zeroline=False, showline=False,
-                        tickformat=".0f", ticksuffix=" %",
-                        tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
-                    ),
-                    legend=dict(
-                        orientation="h", yanchor="bottom", y=1.02,
-                        xanchor="right", x=1,
-                        font=dict(family="Inter, sans-serif", size=11),
-                    ),
-                    hovermode="x unified",
-                    height=360,
-                )
-                st.plotly_chart(fig, use_container_width=True)
+with tab1:
+    _render_tab_anthologie()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 2 — LE DUEL
 # ══════════════════════════════════════════════════════════════════════════════
 
-with tab2:
+@_fragment
+def _render_tab_duel() -> None:
     st.markdown(
         section_header_html(
             "Le Duel",
@@ -236,16 +285,20 @@ with tab2:
     )
 
     col_a, col_b = st.columns(2)
-    prenom_a = col_a.text_input("Premier prénom", placeholder="ex : Kévin", key="vs_a")
-    prenom_b = col_b.text_input("Second prénom", placeholder="ex : Adèle", key="vs_b")
+    raw_a = col_a.text_input("Premier prénom", placeholder="ex : Kévin",
+                             key="vs_a", max_chars=_PRENOM_MAX_LEN)
+    raw_b = col_b.text_input("Second prénom", placeholder="ex : Adèle",
+                             key="vs_b", max_chars=_PRENOM_MAX_LEN)
+    prenom_a = _sanitize_prenom(raw_a)
+    prenom_b = _sanitize_prenom(raw_b)
 
     if prenom_a and prenom_b:
         res_a = lookup(prenom_a, long, scores)
         res_b = lookup(prenom_b, long, scores)
 
         missing = [(n, r) for n, r in [(prenom_a, res_a), (prenom_b, res_b)] if r is None]
-        for name, _ in missing:
-            close = [p for p in all_prenoms if p.lower().startswith(name[:3].lower())][:6]
+        for name, _r in missing:
+            close = _suggest(name, limit=6)
             st.markdown(
                 absent_card_html(name, _absent_msg(name), close),
                 unsafe_allow_html=True,
@@ -298,11 +351,16 @@ with tab2:
             st.plotly_chart(fig, use_container_width=True)
 
 
+with tab2:
+    _render_tab_duel()
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 3 — TENDANCES
 # ══════════════════════════════════════════════════════════════════════════════
 
-with tab3:
+@_fragment
+def _render_tab_tendances() -> None:
     st.markdown(
         section_header_html(
             "Tendances",
@@ -385,11 +443,16 @@ with tab3:
     st.dataframe(top_global, use_container_width=True, hide_index=True)
 
 
+with tab3:
+    _render_tab_tendances()
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 4 — CARTOGRAPHIE
 # ══════════════════════════════════════════════════════════════════════════════
 
-with tab4:
+@_fragment
+def _render_tab_carto() -> None:
     st.markdown(
         section_header_html(
             "Cartographie",
@@ -401,11 +464,13 @@ with tab4:
         unsafe_allow_html=True,
     )
 
-    prenom_map = st.text_input(
+    raw = st.text_input(
         "Prénom à cartographier",
         placeholder="ex : Jordan, Noemie, Baptiste…",
         key="map_input",
+        max_chars=_PRENOM_MAX_LEN,
     )
+    prenom_map = _sanitize_prenom(raw)
 
     if prenom_map:
         dpt_df, total_by_dpt = get_dpt_data()
@@ -413,7 +478,7 @@ with tab4:
         dept_data = get_dept_data(dpt_df, prenom_map, total_by_dpt)
 
         if dept_data is None:
-            close = [p for p in all_prenoms if p.lower().startswith(prenom_map[:3].lower())][:6]
+            close = _suggest(prenom_map, limit=6)
             st.markdown(
                 absent_card_html(
                     prenom_map,
@@ -459,7 +524,7 @@ with tab4:
                     "count_prenom": "Naissances",
                     "pct": "% naissances",
                 },
-                title=f"Popularité de « {prenom_map} » par département",
+                title=f"Popularité de « {_esc(prenom_map)} » par département",
             )
             fig.update_geos(fitbounds="locations", visible=False)
             fig.update_layout(
@@ -481,11 +546,16 @@ with tab4:
             st.dataframe(top_depts, use_container_width=True, hide_index=True)
 
 
+with tab4:
+    _render_tab_carto()
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 5 — PALMARÈS
 # ══════════════════════════════════════════════════════════════════════════════
 
-with tab5:
+@_fragment
+def _render_tab_palmares() -> None:
     st.markdown(
         section_header_html(
             "Palmarès",
@@ -611,11 +681,13 @@ with tab5:
             unsafe_allow_html=True,
         )
 
-        prenom_dec = st.text_input(
+        raw_dec = st.text_input(
             "Votre prénom",
             placeholder="ex : Mathieu, Camille, Alexis…",
             key="decade_input",
+            max_chars=_PRENOM_MAX_LEN,
         )
+        prenom_dec = _sanitize_prenom(raw_dec)
 
         if prenom_dec:
             result_dec = lookup(prenom_dec, long, scores)
@@ -623,7 +695,7 @@ with tab5:
             peak_row   = peak_df[peak_df["prenom_norm"] == norm_dec]
 
             if result_dec is None:
-                close = [p for p in all_prenoms if p.lower().startswith(prenom_dec[:3].lower())][:6]
+                close = _suggest(prenom_dec, limit=6)
                 st.markdown(
                     absent_card_html(prenom_dec, _absent_msg(prenom_dec), close),
                     unsafe_allow_html=True,
@@ -662,8 +734,8 @@ with tab5:
                         unsafe_allow_html=True,
                     )
 
-                top3 = peers.head(3)["prenom"].tolist()
-                bot3 = peers.tail(3)["prenom"].tolist()
+                top3 = [_esc(str(p)) for p in peers.head(3)["prenom"].tolist()]
+                bot3 = [_esc(str(p)) for p in peers.tail(3)["prenom"].tolist()]
 
                 st.markdown(
                     f'<div style="margin-top:1.5rem;display:flex;gap:2rem">'
@@ -680,6 +752,10 @@ with tab5:
                     f'</div>',
                     unsafe_allow_html=True,
                 )
+
+
+with tab5:
+    _render_tab_palmares()
 
 
 # ── Pied de page ──────────────────────────────────────────────────────────────

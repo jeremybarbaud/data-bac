@@ -42,6 +42,9 @@ def compute_scores(long: pd.DataFrame) -> pd.DataFrame:
     scores["score"] = scores["weighted_tb"] / scores["total_n"]
     scores["effectif_total"] = scores["total_n"].astype(int)
     scores["rank_pct"] = scores["score"].rank(pct=True) * 100
+    # Pré-calcul des formes comparables : évite un apply() par lookup().
+    scores["prenom_lower"] = scores["prenom"].str.lower()
+    scores["prenom_norm"]  = scores["prenom"].map(normalize)
     scores = scores.drop(columns=["weighted_tb", "total_n"])
     scores = scores.sort_values("score", ascending=False).reset_index(drop=True)
     return scores
@@ -62,11 +65,19 @@ def lookup(prenom: str, long: pd.DataFrame, scores: pd.DataFrame) -> dict | None
     La recherche est insensible à la casse et aux accents.
     """
     key = prenom.strip()
-    key_norm = normalize(key)
-    # Correspondance : exact d'abord, puis sans accents
-    match_scores = scores[scores["prenom"].str.lower() == key.lower()]
-    if match_scores.empty:
-        match_scores = scores[scores["prenom"].apply(normalize) == key_norm]
+    if not key:
+        return None
+    key_lower = key.lower()
+    key_norm  = normalize(key)
+    # Correspondance : exact-casse d'abord (via colonnes pré-calculées), puis sans accents.
+    if "prenom_lower" in scores.columns:
+        match_scores = scores[scores["prenom_lower"] == key_lower]
+        if match_scores.empty:
+            match_scores = scores[scores["prenom_norm"] == key_norm]
+    else:  # fallback si colonnes pré-calculées absentes
+        match_scores = scores[scores["prenom"].str.lower() == key_lower]
+        if match_scores.empty:
+            match_scores = scores[scores["prenom"].apply(normalize) == key_norm]
     if match_scores.empty:
         return None
 
