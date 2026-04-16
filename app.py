@@ -1,9 +1,11 @@
 """
-Ton Prénom & le Bac — Score de Prestige Académique  (V2)
-Basé sur 2M+ résultats nominatifs du bac général et technologique (2012-2020)
-+ données INSEE naissances 1900-2024 (carte + décennies)
-Source bac : Baptiste Coulmont (coulmont.com/bac)
-Source naissance : INSEE fichier des prénoms
+L'Érudit des Prénoms — Score de Prestige Académique  (V3 · Editorial Scholar)
+2 millions de résultats nominatifs · Bac général & technologique · 2012-2020
++ données INSEE naissances 1900-2024 (carte & décennies)
+
+Sources :
+  Bac       : Baptiste Coulmont — coulmont.com/bac
+  Naissances: INSEE fichier des prénoms
 """
 
 import hashlib
@@ -14,21 +16,38 @@ import plotly.graph_objects as go
 import requests
 import streamlit as st
 
+from src.components import (
+    absent_card_html,
+    duel_card_html,
+    duel_header_html,
+    duel_result_html,
+    gen_card_html,
+    gen_rank_html,
+    hero_html,
+    result_card_html,
+    section_header_html,
+    verdict_card_html,
+)
 from src.decades import DECADE_VIBES, build_decade_scores, build_peak_years, decade_summary
 from src.geo import GEOJSON_URL, get_dept_data
 from src.insee import load_dpt, load_nat
 from src.loader import load_long
 from src.normalize import normalize
+from src.plotly_theme import PRIMARY as _P, SECONDARY as _S, TB_COLORSCALE, apply_theme
 from src.scoring import compute_scores, lookup
+from src.styles import PRIMARY, SECONDARY, SURFACE, inject_css
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="Ton Prénom & le Bac",
+    page_title="L'Érudit des Prénoms",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+inject_css()
+apply_theme()
 
 # ── Messages humoristiques pour prénoms absents ──────────────────────────────
 
@@ -45,9 +64,8 @@ ABSENT_MSGS = [
 
 
 def _absent_msg(prenom: str) -> str:
-    """Retourne un message humoristique déterministe pour un prénom inconnu."""
     idx = int(hashlib.md5(prenom.encode()).hexdigest(), 16) % len(ABSENT_MSGS)
-    return ABSENT_MSGS[idx].format(p=f"**{prenom}**")
+    return ABSENT_MSGS[idx].format(p=prenom)
 
 
 # ── Chargement des données (mis en cache) ────────────────────────────────────
@@ -61,7 +79,6 @@ def get_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 @st.cache_data(show_spinner="Calcul de la moyenne nationale…")
 def get_nat_avg(long: pd.DataFrame) -> pd.DataFrame:
-    """Moyenne nationale pondérée du % TB par année (calculée une seule fois)."""
     return (
         long[long["proptb"].notna()]
         .groupby("year")
@@ -97,155 +114,145 @@ def get_geojson() -> dict:
     return r.json()
 
 
+# ── Chargement initial ────────────────────────────────────────────────────────
+
 long, scores = get_data()
 all_prenoms = sorted(scores["prenom"].tolist())
-
-# ── En-tête ───────────────────────────────────────────────────────────────────
-
-st.title("🎓 Ton Prénom & le Bac")
-st.caption(
-    "2 millions de résultats nominatifs · Bac général & technologique · 2012-2020 · "
-    "Source : [Baptiste Coulmont](https://coulmont.com/bac)"
-)
-st.divider()
 
 # ── Onglets ───────────────────────────────────────────────────────────────────
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🔍 Mon Prénom",
-    "⚔️ Comparateur VS",
-    "📊 Top par Année",
-    "🗺️ Carte par Département",
-    "📅 Classement des Décennies",
+    "Anthologie",
+    "Le Duel",
+    "Tendances",
+    "Cartographie",
+    "Palmarès",
 ])
 
-# ─────────────────────────────────────────────────────────────────────────────
-# TAB 1 — Lookup prénom
-# ─────────────────────────────────────────────────────────────────────────────
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 1 — ANTHOLOGIE (Mon Prénom)
+# ══════════════════════════════════════════════════════════════════════════════
 
 with tab1:
     prenom_input = st.text_input(
-        "Saisis ton prénom",
+        "Votre prénom",
         placeholder="ex : Apolline, Sofiane, Gaëtan…",
         key="tab1_input",
     )
 
-    if prenom_input:
+    if not prenom_input:
+        st.markdown(hero_html(), unsafe_allow_html=True)
+
+    else:
         result = lookup(prenom_input, long, scores)
 
         if result is None:
-            st.warning(_absent_msg(prenom_input))
             close = [p for p in all_prenoms if p.lower().startswith(prenom_input[:3].lower())][:8]
-            if close:
-                st.caption("Prénoms proches disponibles : " + "  ·  ".join(close))
+            st.markdown(
+                absent_card_html(prenom_input, _absent_msg(prenom_input), close),
+                unsafe_allow_html=True,
+            )
         else:
-            # Métriques clés
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric(
-                "Score de Prestige",
-                f"{result['score']:.1f} %",
-                help="% de mention Très Bien moyen, pondéré par l'effectif annuel",
-            )
-            col2.metric(
-                "Percentile",
-                f"{result['rank_pct']:.0f} %ile",
-                help="Rang parmi tous les prénoms du dataset",
-            )
-            col3.metric(
-                "Bacheliers analysés",
-                f"{result['effectif_total']:,}",
-            )
-            col4.metric(
-                "Années de données",
-                f"{result['years_present']} / 9",
-            )
+            # ── Carte résultat ────────────────────────────────────────────────
+            st.markdown(result_card_html(result), unsafe_allow_html=True)
 
-            # Verdict
-            st.info(f"**Le Verdict du Jury :** {result['verdict']}")
+            # ── Verdict ───────────────────────────────────────────────────────
+            st.markdown(verdict_card_html(result), unsafe_allow_html=True)
 
-            # Courbe d'évolution
+            # ── Courbe d'évolution ────────────────────────────────────────────
             hist_df = pd.DataFrame(result["history"])
             if not hist_df.empty and "proptb" in hist_df.columns:
                 nat_avg = get_nat_avg(long)
 
                 fig = go.Figure()
+
+                # Aire nationale
                 fig.add_trace(go.Scatter(
-                    x=nat_avg["year"], y=nat_avg["proptb_nat"],
-                    mode="lines", name="Moyenne nationale",
-                    line=dict(color="lightgray", dash="dot"),
-                    fill="tozeroy", fillcolor="rgba(200,200,200,0.15)",
+                    x=nat_avg["year"],
+                    y=nat_avg["proptb_nat"],
+                    mode="lines",
+                    name="Moyenne nationale",
+                    line=dict(color="rgba(197,197,213,0.6)", width=1.5, dash="dot"),
+                    fill="tozeroy",
+                    fillcolor="rgba(197,197,213,0.08)",
+                    hovertemplate="%{y:.1f} %<extra>Moy. nationale</extra>",
                 ))
+
+                # Courbe prénom
                 fig.add_trace(go.Scatter(
-                    x=hist_df["year"], y=hist_df["proptb"],
-                    mode="lines+markers", name=result["prenom"],
-                    line=dict(color="#FF4B4B", width=3),
-                    marker=dict(size=8),
+                    x=hist_df["year"],
+                    y=hist_df["proptb"],
+                    mode="lines+markers",
+                    name=result["prenom"],
+                    line=dict(color=PRIMARY, width=2.5),
+                    marker=dict(
+                        size=8,
+                        color=SECONDARY,
+                        line=dict(width=2, color=SURFACE),
+                        symbol="diamond",
+                    ),
+                    hovertemplate="%{y:.1f} %<extra>" + result["prenom"] + "</extra>",
                 ))
+
                 fig.update_layout(
-                    title=f"Évolution du % mention TB — {result['prenom']} {result['sexe_label']}",
-                    xaxis_title="Année",
-                    yaxis_title="% Mention Très Bien",
-                    yaxis=dict(rangemode="tozero"),
+                    title=f"Évolution du % mention Très Bien — {result['prenom']} {result['sexe_label']}",
+                    xaxis=dict(
+                        title="",
+                        tickformat="d",
+                        dtick=1,
+                    ),
+                    yaxis=dict(
+                        title="% Mention Très Bien",
+                        rangemode="tozero",
+                    ),
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                     hovermode="x unified",
+                    height=380,
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# TAB 2 — Comparateur VS
-# ─────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 2 — LE DUEL (Comparateur VS)
+# ══════════════════════════════════════════════════════════════════════════════
 
 with tab2:
-    col_a, _vs, col_b = st.columns([5, 1, 5])
-    prenom_a = col_a.text_input("Prénom 1", placeholder="ex : Kévin", key="vs_a")
-    _vs.markdown(
-        "<br><br><div style='text-align:center;font-size:1.4rem;font-weight:bold'>VS</div>",
+    st.markdown(
+        section_header_html(
+            "Le Duel",
+            "Qui méritait vraiment sa mention ?",
+            "Comparez deux prénoms sur l'ensemble des données bac 2012-2020.",
+        ),
         unsafe_allow_html=True,
     )
-    prenom_b = col_b.text_input("Prénom 2", placeholder="ex : Adele", key="vs_b")
+
+    col_a, col_vs, col_b = st.columns([5, 1, 5])
+    prenom_a = col_a.text_input("Premier prénom", placeholder="ex : Kévin", key="vs_a")
+    with col_vs:
+        st.markdown(duel_header_html(), unsafe_allow_html=True)
+    prenom_b = col_b.text_input("Second prénom", placeholder="ex : Adèle", key="vs_b")
 
     if prenom_a and prenom_b:
         res_a = lookup(prenom_a, long, scores)
         res_b = lookup(prenom_b, long, scores)
 
-        missing = [name for name, res in [(prenom_a, res_a), (prenom_b, res_b)] if res is None]
-        for name in missing:
-            st.warning(
-                f"**{name}** : moins de 40 bacheliers recensés sur 2012-2020. "
-                "Ce prénom refuse de se laisser étudier."
+        missing = [(n, r) for n, r in [(prenom_a, res_a), (prenom_b, res_b)] if r is None]
+        for name, _ in missing:
+            close = [p for p in all_prenoms if p.lower().startswith(name[:3].lower())][:6]
+            st.markdown(
+                absent_card_html(name, _absent_msg(name), close),
+                unsafe_allow_html=True,
             )
 
         if res_a and res_b:
-            diff = res_a["score"] - res_b["score"]
-            if abs(diff) < 0.5:
-                st.success(
-                    "**Match nul.** Vos prénoms sont statistiquement à égalité. "
-                    "Décidez à la courte paille."
-                )
-            else:
-                winner = res_a if diff > 0 else res_b
-                loser  = res_b if diff > 0 else res_a
-                st.markdown(
-                    f"### 🏆 **{winner['prenom']}** domine avec "
-                    f"**{winner['score']:.1f} %** de TB vs **{loser['score']:.1f} %**"
-                )
+            st.markdown(duel_result_html(res_a, res_b), unsafe_allow_html=True)
 
-            cola, colb = st.columns(2)
-            with cola:
-                cola.metric(
-                    f"{res_a['prenom']} {res_a['sexe_label']}",
-                    f"{res_a['score']:.1f} %",
-                    f"{res_a['score'] - res_b['score']:+.1f} pts",
-                )
-                st.caption(res_a["verdict"])
-            with colb:
-                colb.metric(
-                    f"{res_b['prenom']} {res_b['sexe_label']}",
-                    f"{res_b['score']:.1f} %",
-                    f"{res_b['score'] - res_a['score']:+.1f} pts",
-                )
-                st.caption(res_b["verdict"])
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(duel_card_html(res_a, side="a"), unsafe_allow_html=True)
+            with col2:
+                st.markdown(duel_card_html(res_b, side="b"), unsafe_allow_html=True)
 
             # Graphique comparatif
             hist_a = pd.DataFrame(res_a["history"]).assign(prenom=res_a["prenom"])
@@ -253,24 +260,44 @@ with tab2:
             combined = pd.concat([hist_a, hist_b], ignore_index=True)
 
             fig = px.line(
-                combined, x="year", y="proptb", color="prenom",
+                combined,
+                x="year",
+                y="proptb",
+                color="prenom",
                 markers=True,
                 title="Évolution comparée du % mention Très Bien",
                 labels={"year": "Année", "proptb": "% TB", "prenom": "Prénom"},
-                color_discrete_sequence=["#FF4B4B", "#1E90FF"],
+                color_discrete_sequence=[_P, _S],
             )
-            fig.update_layout(hovermode="x unified")
+            fig.update_traces(
+                marker=dict(size=8, symbol="diamond", line=dict(width=2, color=SURFACE)),
+                line=dict(width=2.5),
+            )
+            fig.update_layout(
+                hovermode="x unified",
+                height=360,
+                xaxis=dict(tickformat="d", dtick=1),
+            )
             st.plotly_chart(fig, use_container_width=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# TAB 3 — Top par Année
-# ─────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 3 — TENDANCES (Top par Année)
+# ══════════════════════════════════════════════════════════════════════════════
 
 with tab3:
+    st.markdown(
+        section_header_html(
+            "Tendances",
+            "Top des prénoms par millésime",
+            "Quels prénoms ont brillé année par année au baccalauréat ?",
+        ),
+        unsafe_allow_html=True,
+    )
+
     col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([3, 2, 2])
-    year_sel = col_ctrl1.slider("Année", min_value=2012, max_value=2020, value=2019)
-    n_top    = col_ctrl2.radio("Nombre de prénoms", [10, 20], horizontal=True)
+    year_sel = col_ctrl1.slider("Millésime", min_value=2012, max_value=2020, value=2019)
+    n_top    = col_ctrl2.radio("Prénoms affichés", [10, 20], horizontal=True)
     sexe_fil = col_ctrl3.radio("Genre", ["Tous", "♀ Filles", "♂ Garçons"], horizontal=True)
 
     year_data = long[long["year"] == year_sel].copy()
@@ -280,52 +307,65 @@ with tab3:
     elif sexe_fil == "♂ Garçons":
         year_data = year_data[year_data["sexe"] == 1]
 
-    # Filtre N minimum pour éviter les artefacts statistiques
     year_data = year_data[year_data["N"] >= 80]
     top = year_data.nlargest(n_top, "proptb").copy()
 
     if top.empty:
         st.info("Pas assez de données pour les filtres sélectionnés.")
     else:
-        top["label"] = top["prenom"] + "  (" + top["N"].astype(str) + " candidats)"
+        top["label"] = top["prenom"] + "  (" + top["N"].astype(str) + ")"
+
         fig = px.bar(
             top.sort_values("proptb"),
             x="proptb",
             y="label",
             orientation="h",
-            title=f"Top {n_top} prénoms — % mention Très Bien · {year_sel}",
+            title=f"Top {n_top} — % mention Très Bien · {year_sel}",
             labels={"proptb": "% Mention Très Bien", "label": ""},
             color="proptb",
-            color_continuous_scale="RdYlGn",
+            color_continuous_scale=TB_COLORSCALE,
             text="proptb",
         )
-        fig.update_traces(texttemplate="%{text:.1f} %", textposition="outside")
+        fig.update_traces(
+            texttemplate="%{text:.1f} %",
+            textposition="outside",
+            textfont=dict(size=10),
+            marker=dict(line=dict(width=0)),
+        )
         fig.update_layout(
             coloraxis_showscale=False,
             yaxis={"categoryorder": "total ascending"},
             xaxis_title="% Mention Très Bien",
-            height=max(400, n_top * 30),
+            height=max(420, n_top * 32),
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # Classement global (tous prénoms, toutes années confondues)
-    st.divider()
-    st.subheader("Classement global 2012-2020")
+    # Classement global
+    st.markdown("<hr class='es-rule'>", unsafe_allow_html=True)
+    st.markdown(
+        section_header_html("Palmarès absolu", "Classement général 2012-2020"),
+        unsafe_allow_html=True,
+    )
     top_global = scores.head(20)[["prenom", "score", "effectif_total", "years_present"]].copy()
     top_global.columns = ["Prénom", "Score TB moy. (%)", "Bacheliers total", "Années de données"]
     top_global["Score TB moy. (%)"] = top_global["Score TB moy. (%)"].round(1)
     st.dataframe(top_global, use_container_width=True, hide_index=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# TAB 4 — Carte par Département
-# ─────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 4 — CARTOGRAPHIE (Carte par Département)
+# ══════════════════════════════════════════════════════════════════════════════
 
 with tab4:
     st.markdown(
-        "Où en France un prénom est-il le plus populaire ? "
-        "L'**indice** compare la part du prénom dans chaque département "
-        "à la moyenne nationale (1.0 = dans la moyenne, 2.0 = deux fois plus répandu)."
+        section_header_html(
+            "Cartographie",
+            "Géographie d'un prénom",
+            "Où en France un prénom est-il le plus populaire ? "
+            "L'indice compare chaque département à la moyenne nationale "
+            "(1.0 = dans la moyenne · 2.0 = deux fois plus répandu).",
+        ),
+        unsafe_allow_html=True,
     )
 
     prenom_map = st.text_input(
@@ -337,17 +377,29 @@ with tab4:
     if prenom_map:
         dpt_df, total_by_dpt = get_dpt_data()
         geojson = get_geojson()
-
         dept_data = get_dept_data(dpt_df, prenom_map, total_by_dpt)
 
         if dept_data is None:
-            st.warning(
-                f"**{prenom_map}** : introuvable dans le fichier INSEE. "
-                "Soit ce prénom est rarissime, soit il s'épelle autrement — l'INSEE est pointilleux."
+            close = [p for p in all_prenoms if p.lower().startswith(prenom_map[:3].lower())][:6]
+            st.markdown(
+                absent_card_html(
+                    prenom_map,
+                    f"{prenom_map} : introuvable dans le fichier INSEE. "
+                    "Soit ce prénom est rarissime, soit il s'épelle autrement — l'INSEE est pointilleux.",
+                    close,
+                ),
+                unsafe_allow_html=True,
             )
         else:
             total_naissances = int(dept_data["count_prenom"].sum())
-            st.caption(f"Total naissances recensées (1900-2024, France métro) : **{total_naissances:,}**")
+            st.markdown(
+                f'<p style="font-family:\'Inter\',sans-serif;font-size:.7rem;'
+                f'font-weight:600;text-transform:uppercase;letter-spacing:.12em;'
+                f'color:#444653;margin-bottom:1.5rem">'
+                f'Total naissances recensées (1900-2024, France métro) — '
+                f'<strong style="color:#001360">{total_naissances:,}</strong></p>',
+                unsafe_allow_html=True,
+            )
 
             fig = px.choropleth(
                 dept_data,
@@ -355,38 +407,61 @@ with tab4:
                 locations="dpt",
                 featureidkey="properties.code",
                 color="indice",
-                color_continuous_scale="RdYlGn",
+                color_continuous_scale=[
+                    [0.0,  "#faf9f5"],
+                    [0.3,  "#b8c0e0"],
+                    [0.6,  "#506aaa"],
+                    [1.0,  "#001360"],
+                ],
                 range_color=[0, dept_data["indice"].quantile(0.95)],
                 hover_name="dpt",
-                hover_data={"indice": ":.2f", "count_prenom": ":,", "pct": ":.3f", "dpt": False},
-                labels={"indice": "Indice", "count_prenom": "Naissances", "pct": "% naissances"},
+                hover_data={
+                    "indice": ":.2f",
+                    "count_prenom": ":,",
+                    "pct": ":.3f",
+                    "dpt": False,
+                },
+                labels={
+                    "indice": "Indice",
+                    "count_prenom": "Naissances",
+                    "pct": "% naissances",
+                },
                 title=f"Popularité de « {prenom_map} » par département",
             )
             fig.update_geos(fitbounds="locations", visible=False)
             fig.update_layout(
                 height=550,
                 coloraxis_colorbar=dict(title="Indice", tickformat=".1f"),
-                margin=dict(l=0, r=0, t=40, b=0),
+                margin=dict(l=0, r=0, t=48, b=0),
+                paper_bgcolor=SURFACE,
             )
             st.plotly_chart(fig, use_container_width=True)
 
             # Top 10 départements
             top_depts = dept_data.nlargest(10, "indice")[["dpt", "count_prenom", "pct", "indice"]]
+            top_depts = top_depts.copy()
             top_depts.columns = ["Département", "Naissances", "% naissances", "Indice"]
             top_depts["% naissances"] = top_depts["% naissances"].round(3)
-            st.subheader("Top 10 départements de surreprésentation")
+            st.markdown(
+                section_header_html("Analyse", "Top 10 — surreprésentation"),
+                unsafe_allow_html=True,
+            )
             st.dataframe(top_depts, use_container_width=True, hide_index=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# TAB 5 — Classement des Décennies
-# ─────────────────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 5 — PALMARÈS (Classement des Décennies)
+# ══════════════════════════════════════════════════════════════════════════════
 
 with tab5:
     st.markdown(
-        "Les prénoms des **années 80** ont-ils vraiment un moins bon score que "
-        "ceux des **années 2000** ? On croise les données bac avec l'année de pic "
-        "de popularité de chaque prénom (INSEE naissances 1900-2024)."
+        section_header_html(
+            "Palmarès",
+            "Classement des générations",
+            "Les prénoms des années 80 ont-ils un moins bon score que ceux des années 2000 ? "
+            "On croise les données bac avec l'année de pic de popularité de chaque prénom (INSEE 1900-2024).",
+        ),
+        unsafe_allow_html=True,
     )
 
     peak_df, dec_scores, dec_sum = get_decade_data(scores)
@@ -394,23 +469,35 @@ with tab5:
     if dec_scores.empty:
         st.error("Impossible de charger les données INSEE nationales.")
     else:
-        # ── Vue globale : score moyen par décennie ─────────────────────────
+        # Vue globale : score moyen par décennie
         fig_bar = px.bar(
             dec_sum,
             x="decade_label",
             y="score_moyen",
             text="score_moyen",
             color="score_moyen",
-            color_continuous_scale="RdYlGn",
+            color_continuous_scale=TB_COLORSCALE,
             title="Score moyen de mention TB par génération de prénoms",
             labels={"decade_label": "Génération", "score_moyen": "Score moyen (% TB)"},
             hover_data={"nb_prenoms": True, "top_prenom": True, "bottom_prenom": True},
         )
-        fig_bar.update_traces(texttemplate="%{text:.1f} %", textposition="outside")
-        fig_bar.update_layout(coloraxis_showscale=False, showlegend=False)
+        fig_bar.update_traces(
+            texttemplate="%{text:.1f} %",
+            textposition="outside",
+            textfont=dict(size=10),
+            marker=dict(line=dict(width=0)),
+        )
+        fig_bar.update_layout(coloraxis_showscale=False, showlegend=False, height=380)
         st.plotly_chart(fig_bar, use_container_width=True)
 
-        # ── Distribution (boxplot) ─────────────────────────────────────────
+        # Distribution (boxplot)
+        decade_colors = {
+            label: col
+            for label, col in zip(
+                dec_scores["decade_label"].unique(),
+                [PRIMARY, SECONDARY, TERTIARY, "#2d4de0", "#b58900", "#78002b", "#5f6a8a"],
+            )
+        }
         fig_box = px.box(
             dec_scores,
             x="decade_label",
@@ -420,47 +507,70 @@ with tab5:
             title="Distribution des scores par génération",
             labels={"decade_label": "Génération", "score": "% mention TB", "prenom": "Prénom"},
             hover_data=["prenom"],
+            color_discrete_map=decade_colors,
         )
-        fig_box.update_layout(showlegend=False)
+        fig_box.update_traces(
+            marker=dict(size=4, opacity=0.5),
+            line=dict(width=1.5),
+        )
+        fig_box.update_layout(showlegend=False, height=380)
         st.plotly_chart(fig_box, use_container_width=True)
 
-        # ── Tableau récap ──────────────────────────────────────────────────
-        st.subheader("Récap par génération")
+        # Tableau récap
+        st.markdown("<hr class='es-rule'>", unsafe_allow_html=True)
+        st.markdown(
+            section_header_html("Récapitulatif", "Par génération"),
+            unsafe_allow_html=True,
+        )
         display = dec_sum[[
             "decade_vibe", "decade_label", "score_moyen", "nb_prenoms",
-            "top_prenom", "top_score", "bottom_prenom", "bottom_score"
+            "top_prenom", "top_score", "bottom_prenom", "bottom_score",
         ]].copy()
         display.columns = [
             "", "Génération", "Score moy. (%)", "Nb prénoms",
-            "🏆 Meilleur", "Score TB (%)", "💀 Pire", "Score TB (%) "
+            "Meilleur", "Score TB (%)", "Pire", "Score TB (%) ",
         ]
         st.dataframe(display, use_container_width=True, hide_index=True)
 
-        # ── Cherche ta décennie ────────────────────────────────────────────
-        st.divider()
-        st.subheader("Trouve ta génération")
+        # Cherche ta décennie
+        st.markdown("<hr class='es-rule'>", unsafe_allow_html=True)
+        st.markdown(
+            section_header_html("Exploration", "Trouve ta génération"),
+            unsafe_allow_html=True,
+        )
+
         prenom_dec = st.text_input(
-            "Ton prénom",
+            "Votre prénom",
             placeholder="ex : Mathieu, Camille, Alexis…",
             key="decade_input",
         )
+
         if prenom_dec:
             result_dec = lookup(prenom_dec, long, scores)
-            norm_dec = normalize(prenom_dec)
-            peak_row = peak_df[peak_df["prenom_norm"] == norm_dec]
+            norm_dec   = normalize(prenom_dec)
+            peak_row   = peak_df[peak_df["prenom_norm"] == norm_dec]
 
             if result_dec is None:
-                st.warning(_absent_msg(prenom_dec))
+                close = [p for p in all_prenoms if p.lower().startswith(prenom_dec[:3].lower())][:6]
+                st.markdown(
+                    absent_card_html(prenom_dec, _absent_msg(prenom_dec), close),
+                    unsafe_allow_html=True,
+                )
             elif peak_row.empty:
-                st.warning(
-                    f"**{prenom_dec}** : absent du fichier INSEE naissances. "
-                    "Ce prénom échappe à toute classification générationnelle."
+                st.markdown(
+                    absent_card_html(
+                        prenom_dec,
+                        f"{prenom_dec} : absent du fichier INSEE naissances. "
+                        "Ce prénom échappe à toute classification générationnelle.",
+                        [],
+                    ),
+                    unsafe_allow_html=True,
                 )
             else:
-                peak_year  = int(peak_row.iloc[0]["peak_year"])
-                decade     = (peak_year // 10) * 10
-                vibe       = DECADE_VIBES.get(decade, "🎓")
-                dec_label  = f"Années {decade if decade < 2000 else str(decade)}"
+                peak_year = int(peak_row.iloc[0]["peak_year"])
+                decade    = (peak_year // 10) * 10
+                vibe      = DECADE_VIBES.get(decade, "🎓")
+                dec_label = f"Années {decade}"
 
                 # Rang dans la décennie
                 peers = (
@@ -468,32 +578,51 @@ with tab5:
                     .sort_values("score", ascending=False)
                     .reset_index(drop=True)
                 )
-                rank_in_dec = peers[peers["prenom"].str.lower() == result_dec["prenom"].lower()].index
-                rank_str = f"{int(rank_in_dec[0]) + 1}/{len(peers)}" if len(rank_in_dec) else "N/A"
+                rank_idx = peers[peers["prenom"].str.lower() == result_dec["prenom"].lower()].index
+                rank_num = int(rank_idx[0]) + 1 if len(rank_idx) else None
+                rank_str = f"{rank_num} / {len(peers)}" if rank_num else "N/A"
 
-                col1, col2, col3 = st.columns(3)
-                col1.metric(f"{vibe} Génération", dec_label, f"Pic de popularité : {peak_year}")
-                col2.metric("Score Bac", f"{result_dec['score']:.1f} %")
-                col3.metric("Rang dans sa génération", rank_str)
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(gen_card_html(vibe, dec_label, peak_year), unsafe_allow_html=True)
+                with col2:
+                    st.markdown(
+                        gen_rank_html(rank_str, len(peers), result_dec["prenom"]),
+                        unsafe_allow_html=True,
+                    )
 
-                st.info(
-                    f"**{result_dec['prenom']}** est un prénom des {dec_label}. "
-                    f"Dans sa génération, il se classe **{rank_str}**."
-                )
-
-                # Top/bottom de la décennie
                 top3 = peers.head(3)["prenom"].tolist()
                 bot3 = peers.tail(3)["prenom"].tolist()
-                st.caption(f"🏆 Top 3 de ta génération : {', '.join(top3)}")
-                st.caption(f"💀 Flop 3 : {', '.join(bot3)}")
+
+                st.markdown(
+                    f'<div style="margin-top:1.5rem;display:flex;gap:2rem">'
+                    f'<div><span style="font-family:\'Inter\',sans-serif;font-size:.5rem;'
+                    f'font-weight:700;text-transform:uppercase;letter-spacing:.13em;'
+                    f'color:#444653;display:block;margin-bottom:.4rem">Top 3 de ta génération</span>'
+                    f'<span style="font-family:\'Newsreader\',serif;font-size:1rem;'
+                    f'font-weight:700;color:#001360">{" · ".join(top3)}</span></div>'
+                    f'<div><span style="font-family:\'Inter\',sans-serif;font-size:.5rem;'
+                    f'font-weight:700;text-transform:uppercase;letter-spacing:.13em;'
+                    f'color:#444653;display:block;margin-bottom:.4rem">Flop 3</span>'
+                    f'<span style="font-family:\'Newsreader\',serif;font-size:1rem;'
+                    f'font-weight:700;color:#470003">{" · ".join(bot3)}</span></div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
 
 # ── Pied de page ──────────────────────────────────────────────────────────────
 
-st.divider()
-st.caption(
-    "Données bac : Baptiste Coulmont · [coulmont.com/bac](https://coulmont.com/bac) · "
-    "Résultats nominatifs publiés par les candidats · Bac général & technologique 2012-2020 · "
-    "Données naissances : [INSEE Fichier des prénoms](https://www.insee.fr/fr/statistiques/8595130) · "
-    "Seuls les prénoms avec ≥ 40 bacheliers recensés sont inclus."
+st.markdown(
+    f'<div style="border-top:1px solid rgba(197,197,213,0.3);'
+    f'margin-top:3rem;padding-top:1.5rem">'
+    f'<p style="font-family:\'Inter\',sans-serif;font-size:.65rem;'
+    f'color:#444653;line-height:2">'
+    f'Données bac : <a href="https://coulmont.com/bac" style="color:#001360">Baptiste Coulmont</a> · '
+    f'Résultats nominatifs publiés par les candidats · Bac général & technologique 2012-2020 · '
+    f'Données naissances : <a href="https://www.insee.fr/fr/statistiques/8595130" style="color:#001360">'
+    f'INSEE Fichier des prénoms</a> · '
+    f'Seuls les prénoms avec ≥ 40 bacheliers recensés sont inclus.'
+    f'</p></div>',
+    unsafe_allow_html=True,
 )
