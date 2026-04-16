@@ -378,7 +378,7 @@ with tab5:
         ]].copy()
         display.columns = [
             "", "Génération", "Score moy. (%)", "Nb prénoms",
-            "🏆 Meilleur", "Score", "💀 Pire", "Score"
+            "🏆 Meilleur", "Score TB (%)", "💀 Pire", "Score TB (%) "
         ]
         st.dataframe(display, use_container_width=True, hide_index=True)
 
