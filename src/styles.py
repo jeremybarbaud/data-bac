@@ -29,7 +29,6 @@ FONT_HEADLINE    = "'Newsreader', Georgia, serif"
 FONT_BODY        = "'Inter', system-ui, sans-serif"
 
 _CSS = f"""
-<!-- Editorial Scholar — Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..900;1,6..72,300..900&family=Inter:wght@300..800&display=swap" rel="stylesheet">
 <style>
 
@@ -659,4 +658,4 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
 
 def inject_css() -> None:
     """Injecte l'intégralité du design system dans l'app Streamlit."""
-    st.markdown(_CSS, unsafe_allow_html=True)
+    st.html(_CSS)

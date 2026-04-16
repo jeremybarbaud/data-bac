@@ -64,47 +64,32 @@ def _make_template() -> go.layout.Template:
         title_font=dict(family=FONT_BODY, size=11, color=ON_SURF_V),
     )
 
-    layout = go.Layout(
-        # Fond
+    tmpl = go.layout.Template()
+
+    tmpl.layout = go.Layout(
         paper_bgcolor=SURFACE,
         plot_bgcolor=SURFACE,
-
-        # Police générale
         font=dict(family=FONT_BODY, size=12, color=ON_SURF),
-
-        # Titre
         title=dict(
             font=dict(family=FONT_HEADLINE, size=22, color=PRIMARY),
             x=0,
             xanchor="left",
             pad=dict(l=0, b=12),
         ),
-
-        # Légende
         legend=dict(
             font=dict(family=FONT_BODY, size=11, color=ON_SURF_V),
             bgcolor="rgba(0,0,0,0)",
             borderwidth=0,
         ),
-
-        # Axes X / Y par défaut
         xaxis=axis_common,
         yaxis=axis_common,
-
-        # Marges confortables
         margin=dict(l=0, r=0, t=48, b=8),
-
-        # Hover
         hoverlabel=dict(
             bgcolor="white",
             bordercolor="rgba(197,197,213,0.6)",
             font=dict(family=FONT_BODY, size=12, color=ON_SURF),
         ),
-
-        # Couleurs catégorielles
         colorway=COLOR_SEQ,
-
-        # Colorbar (pour choroplèthes, etc.)
         coloraxis=dict(
             colorbar=dict(
                 tickfont=dict(family=FONT_BODY, size=10, color=ON_SURF_V),
@@ -117,22 +102,21 @@ def _make_template() -> go.layout.Template:
         ),
     )
 
-    data = go.layout.template.Data(
-        scatter=[go.Scatter(
-            line=dict(width=2.5),
-            marker=dict(size=7, line=dict(width=1.5, color=SURFACE)),
-        )],
-        bar=[go.Bar(
-            marker=dict(line=dict(width=0)),
-        )],
-        box=[go.Box(
-            line=dict(color=PRIMARY),
-            fillcolor="rgba(0,19,96,0.07)",
-            marker=dict(color=PRIMARY, size=4, opacity=0.5),
-        )],
-    )
+    # Valeurs par défaut des traces (API stable)
+    tmpl.data.scatter = [go.Scatter(
+        line=dict(width=2.5),
+        marker=dict(size=7, line=dict(width=1.5, color=SURFACE)),
+    )]
+    tmpl.data.bar = [go.Bar(
+        marker=dict(line=dict(width=0)),
+    )]
+    tmpl.data.box = [go.Box(
+        line=dict(color=PRIMARY),
+        fillcolor="rgba(0,19,96,0.07)",
+        marker=dict(color=PRIMARY, size=4, opacity=0.5),
+    )]
 
-    return go.layout.Template(layout=layout, data=data)
+    return tmpl
 
 
 _TEMPLATE_NAME = "editorial_scholar"
