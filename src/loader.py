@@ -5,12 +5,14 @@ Source : https://coulmont.com/bac/data-2020.tsv
 Format brut (wide) : prenom | ecart{Y} | N{Y} | proptb{Y} | sexe{Y}  pour Y in 2012..2020
 """
 
-import pandas as pd
-import requests
 from pathlib import Path
 
+import pandas as pd
+import requests
+
+_HERE = Path(__file__).resolve().parent.parent
 DATA_URL = "https://coulmont.com/bac/data-2020.tsv"
-RAW_PATH = Path("data/raw/bac_prenoms.tsv")
+RAW_PATH = _HERE / "data" / "raw" / "bac_prenoms.tsv"
 YEARS = list(range(2012, 2021))
 
 SEXE_LABELS = {0: "♀", 1: "♂", 2: "♀♂"}
@@ -30,7 +32,7 @@ def download_data() -> Path:
     return RAW_PATH
 
 
-def load_wide() -> pd.DataFrame:
+def _load_wide() -> pd.DataFrame:
     """Retourne le dataframe au format wide (tel que téléchargé)."""
     return pd.read_csv(download_data(), sep="\t")
 
@@ -42,7 +44,7 @@ def load_long() -> pd.DataFrame:
 
     Seules les lignes avec N >= 40 sont conservées (seuil Coulmont).
     """
-    df = load_wide()
+    df = _load_wide()
 
     frames = []
     for year in YEARS:

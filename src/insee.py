@@ -8,25 +8,25 @@ Les fichiers sont téléchargés une seule fois puis mis en cache en parquet.
 """
 
 import io
-import unicodedata
 import zipfile
 from pathlib import Path
 
 import pandas as pd
 import requests
 
+from src.normalize import normalize
+
+_HERE = Path(__file__).resolve().parent.parent
+
 NAT_URL = "https://www.insee.fr/fr/statistiques/fichier/8595130/prenoms-2024-nat_csv.zip"
 DPT_URL = "https://www.insee.fr/fr/statistiques/fichier/8595130/prenoms-2024-dpt_csv.zip"
 
-NAT_CACHE = Path("data/raw/insee_nat.parquet")
-DPT_CACHE = Path("data/raw/insee_dpt.parquet")
+NAT_CACHE = _HERE / "data" / "raw" / "insee_nat.parquet"
+DPT_CACHE = _HERE / "data" / "raw" / "insee_dpt.parquet"
+
+_METRO_DPTS = frozenset([f"{i:02d}" for i in range(1, 96)] + ["2A", "2B", "20"])
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (data-bac project)"}
-
-
-def normalize(text: str) -> str:
-    """Supprime accents et met en minuscules pour jointures souples."""
-    return unicodedata.normalize("NFD", str(text)).encode("ascii", "ignore").decode().lower()
 
 
 def _load_zip_csv(url: str, cache: Path) -> pd.DataFrame:
@@ -52,10 +52,9 @@ def _load_zip_csv(url: str, cache: Path) -> pd.DataFrame:
     # Prénoms normalisés pour jointures
     df["prenom_norm"] = df["prenom"].apply(normalize)
 
-    # Filtre : France métropolitaine uniquement (codes dpt 01-95 + 2A + 2B)
+    # Filtre : France métropolitaine uniquement
     if "dpt" in df.columns:
-        metro = set([f"{i:02d}" for i in range(1, 96)] + ["2A", "2B", "20"])
-        df = df[df["dpt"].isin(metro)].copy()
+        df = df[df["dpt"].isin(_METRO_DPTS)].copy()
 
     df.to_parquet(cache, index=False)
     return df

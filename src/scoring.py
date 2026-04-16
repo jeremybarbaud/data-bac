@@ -5,14 +5,9 @@ Score = moyenne pondérée du % mention TB sur toutes les années disponibles
         pondération = N (effectif) par année
 """
 
-import unicodedata
-
 import pandas as pd
 
-
-def _normalize(text: str) -> str:
-    """Supprime les accents et met en minuscules pour comparaison souple."""
-    return unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode().lower()
+from src.normalize import normalize
 
 # Seuils pour le verdict (% TB moyen pondéré)
 # Moyenne nationale : ~10-15 % toutes séries confondues (général + techno)
@@ -31,47 +26,52 @@ def compute_scores(long: pd.DataFrame) -> pd.DataFrame:
     Retourne un DataFrame avec une ligne par prénom :
     prenom | score | effectif_total | years_present | rank_pct
     """
-    def _agg(g: pd.DataFrame) -> pd.Series:
-        valid = g[g["proptb"].notna()]
-        if valid.empty or valid["N"].sum() == 0:
-            return pd.Series({"score": float("nan"), "effectif_total": 0, "years_present": 0})
-        score = (valid["proptb"] * valid["N"]).sum() / valid["N"].sum()
-        return pd.Series({
-            "score": score,
-            "effectif_total": int(valid["N"].sum()),
-            "years_present": int(valid["year"].nunique()),
-        })
+    valid = long[long["proptb"].notna()].copy()
 
-    scores = long.groupby("prenom", sort=False).apply(_agg).reset_index()
-    scores = scores[scores["score"].notna()].copy()
+    scores = (
+        valid
+        .groupby("prenom", sort=False)
+        .agg(
+            weighted_tb=("proptb", lambda s: (s * valid.loc[s.index, "N"]).sum()),
+            total_n=("N", "sum"),
+            years_present=("year", "nunique"),
+        )
+        .reset_index()
+    )
+    scores = scores[scores["total_n"] > 0].copy()
+    scores["score"] = scores["weighted_tb"] / scores["total_n"]
+    scores["effectif_total"] = scores["total_n"].astype(int)
     scores["rank_pct"] = scores["score"].rank(pct=True) * 100
+    scores = scores.drop(columns=["weighted_tb", "total_n"])
     scores = scores.sort_values("score", ascending=False).reset_index(drop=True)
     return scores
 
 
 def get_verdict(score: float) -> str:
+    """Retourne le verdict humoristique correspondant au score."""
     for threshold, text in VERDICTS:
         if score >= threshold:
             return text
+    # Seuil 0 attrape toujours — ce return est une sécurité défensive.
     return VERDICTS[-1][1]
 
 
 def lookup(prenom: str, long: pd.DataFrame, scores: pd.DataFrame) -> dict | None:
     """
     Retourne les infos complètes d'un prénom, ou None si absent du dataset.
-    La recherche est insensible à la casse.
+    La recherche est insensible à la casse et aux accents.
     """
     key = prenom.strip()
-    key_norm = _normalize(key)
+    key_norm = normalize(key)
     # Correspondance : exact d'abord, puis sans accents
     match_scores = scores[scores["prenom"].str.lower() == key.lower()]
     if match_scores.empty:
-        match_scores = scores[scores["prenom"].apply(_normalize) == key_norm]
+        match_scores = scores[scores["prenom"].apply(normalize) == key_norm]
     if match_scores.empty:
         return None
 
     row = match_scores.iloc[0]
-    canonical = match_scores.iloc[0]["prenom"]
+    canonical = row["prenom"]
     hist = long[long["prenom"] == canonical].sort_values("year")
 
     # Récupère le label de genre dominant
@@ -80,7 +80,7 @@ def lookup(prenom: str, long: pd.DataFrame, scores: pd.DataFrame) -> dict | None
         sexe_label = hist["sexe_label"].mode().iloc[0]
 
     return {
-        "prenom": row["prenom"],
+        "prenom": canonical,
         "score": float(row["score"]),
         "rank_pct": float(row["rank_pct"]),
         "effectif_total": int(row["effectif_total"]),

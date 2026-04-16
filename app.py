@@ -6,16 +6,20 @@ Source bac : Baptiste Coulmont (coulmont.com/bac)
 Source naissance : INSEE fichier des prénoms
 """
 
+import hashlib
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import requests
 import streamlit as st
 
+from src.decades import DECADE_VIBES, build_decade_scores, build_peak_years, decade_summary
+from src.geo import GEOJSON_URL, get_dept_data
+from src.insee import load_dpt, load_nat
 from src.loader import load_long
-from src.scoring import compute_scores, get_verdict, lookup
-from src.insee import load_nat, load_dpt
-from src.decades import build_peak_years, build_decade_scores, decade_summary
-from src.geo import get_dept_data, load_geojson
+from src.normalize import normalize
+from src.scoring import compute_scores, lookup
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -26,13 +30,71 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Chargement des données (mis en cache) ─────────────────────────────────────
+# ── Messages humoristiques pour prénoms absents ──────────────────────────────
 
-@st.cache_data(show_spinner="Chargement des données...")
+ABSENT_MSGS = [
+    "{p} ? Inconnu au bataillon. Soit ce prénom est rarissime, "
+    "soit vos parents ont vraiment voulu vous démarquer.",
+    "{p} n'a pas laissé assez de traces sur les bancs du lycée "
+    "pour figurer dans nos données. Mystère ou originalité assumée ?",
+    "Moins de 40 bacheliers répondant au nom de {p} sur 9 ans. "
+    "Votre prénom est soit une œuvre d'art, soit une erreur de registre.",
+    "{p} : introuvable. L'algorithme a cherché, il est épuisé. "
+    "Essayez une orthographe alternative — ou acceptez d'être une légende.",
+]
+
+
+def _absent_msg(prenom: str) -> str:
+    """Retourne un message humoristique déterministe pour un prénom inconnu."""
+    idx = int(hashlib.md5(prenom.encode()).hexdigest(), 16) % len(ABSENT_MSGS)
+    return ABSENT_MSGS[idx].format(p=f"**{prenom}**")
+
+
+# ── Chargement des données (mis en cache) ────────────────────────────────────
+
+@st.cache_data(show_spinner="Chargement des données bac…")
 def get_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     long = load_long()
     scores = compute_scores(long)
     return long, scores
+
+
+@st.cache_data(show_spinner="Calcul de la moyenne nationale…")
+def get_nat_avg(long: pd.DataFrame) -> pd.DataFrame:
+    """Moyenne nationale pondérée du % TB par année (calculée une seule fois)."""
+    return (
+        long[long["proptb"].notna()]
+        .groupby("year")
+        .apply(lambda g: (g["proptb"] * g["N"]).sum() / g["N"].sum(), include_groups=False)
+        .reset_index(name="proptb_nat")
+    )
+
+
+@st.cache_data(show_spinner="Chargement des données INSEE nationales…")
+def get_decade_data(scores: pd.DataFrame):
+    nat_df = load_nat()
+    peak_df = build_peak_years(nat_df)
+    dec_scores = build_decade_scores(scores, peak_df)
+    dec_sum = decade_summary(dec_scores)
+    return peak_df, dec_scores, dec_sum
+
+
+@st.cache_data(show_spinner="Chargement des données INSEE départementales…")
+def get_dpt_data():
+    dpt_df = load_dpt()
+    total_by_dpt = (
+        dpt_df.groupby("dpt")["valeur"]
+        .sum()
+        .reset_index(name="total_dpt")
+    )
+    return dpt_df, total_by_dpt
+
+
+@st.cache_resource(show_spinner="Chargement du fond de carte…")
+def get_geojson() -> dict:
+    r = requests.get(GEOJSON_URL, timeout=30)
+    r.raise_for_status()
+    return r.json()
 
 
 long, scores = get_data()
@@ -72,15 +134,7 @@ with tab1:
         result = lookup(prenom_input, long, scores)
 
         if result is None:
-            ABSENT_MSGS = [
-                f"**{prenom_input}** ? Inconnu au bataillon. Soit ce prénom est rarissime, soit vos parents ont vraiment voulu vous démarquer.",
-                f"**{prenom_input}** n'a pas laissé assez de traces sur les bancs du lycée pour figurer dans nos données. Mystère ou originalité assumée ?",
-                f"Moins de 40 bacheliers répondant au nom de **{prenom_input}** sur 9 ans. Votre prénom est soit une œuvre d'art, soit une erreur de registre.",
-                f"**{prenom_input}** : introuvable. L'algorithme a cherché, il est épuisé. Essayez une orthographe alternative — ou acceptez d'être une légende.",
-            ]
-            import hashlib
-            msg_idx = int(hashlib.md5(prenom_input.encode()).hexdigest(), 16) % len(ABSENT_MSGS)
-            st.warning(ABSENT_MSGS[msg_idx])
+            st.warning(_absent_msg(prenom_input))
             close = [p for p in all_prenoms if p.lower().startswith(prenom_input[:3].lower())][:8]
             if close:
                 st.caption("Prénoms proches disponibles : " + "  ·  ".join(close))
@@ -112,9 +166,7 @@ with tab1:
             # Courbe d'évolution
             hist_df = pd.DataFrame(result["history"])
             if not hist_df.empty and "proptb" in hist_df.columns:
-                nat_avg = long.groupby("year").apply(
-                    lambda g: (g["proptb"] * g["N"]).sum() / g["N"].sum()
-                ).reset_index(name="proptb_nat")
+                nat_avg = get_nat_avg(long)
 
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(
@@ -147,8 +199,10 @@ with tab1:
 with tab2:
     col_a, _vs, col_b = st.columns([5, 1, 5])
     prenom_a = col_a.text_input("Prénom 1", placeholder="ex : Kévin", key="vs_a")
-    _vs.markdown("<br><br><div style='text-align:center;font-size:1.4rem;font-weight:bold'>VS</div>",
-                 unsafe_allow_html=True)
+    _vs.markdown(
+        "<br><br><div style='text-align:center;font-size:1.4rem;font-weight:bold'>VS</div>",
+        unsafe_allow_html=True,
+    )
     prenom_b = col_b.text_input("Prénom 2", placeholder="ex : Adele", key="vs_b")
 
     if prenom_a and prenom_b:
@@ -157,13 +211,18 @@ with tab2:
 
         missing = [name for name, res in [(prenom_a, res_a), (prenom_b, res_b)] if res is None]
         for name in missing:
-            st.warning(f"**{name}** : moins de 40 bacheliers recensés sur 2012-2020. Ce prénom refuse de se laisser étudier.")
+            st.warning(
+                f"**{name}** : moins de 40 bacheliers recensés sur 2012-2020. "
+                "Ce prénom refuse de se laisser étudier."
+            )
 
         if res_a and res_b:
             diff = res_a["score"] - res_b["score"]
             if abs(diff) < 0.5:
-                st.success("**Match nul.** Vos prénoms sont statistiquement à égalité. "
-                           "Décidez à la courte paille.")
+                st.success(
+                    "**Match nul.** Vos prénoms sont statistiquement à égalité. "
+                    "Décidez à la courte paille."
+                )
             else:
                 winner = res_a if diff > 0 else res_b
                 loser  = res_b if diff > 0 else res_a
@@ -174,19 +233,17 @@ with tab2:
 
             cola, colb = st.columns(2)
             with cola:
-                delta = f"{res_a['score'] - res_b['score']:+.1f} pts"
                 cola.metric(
                     f"{res_a['prenom']} {res_a['sexe_label']}",
                     f"{res_a['score']:.1f} %",
-                    delta,
+                    f"{res_a['score'] - res_b['score']:+.1f} pts",
                 )
                 st.caption(res_a["verdict"])
             with colb:
-                delta = f"{res_b['score'] - res_a['score']:+.1f} pts"
                 colb.metric(
                     f"{res_b['prenom']} {res_b['sexe_label']}",
                     f"{res_b['score']:.1f} %",
-                    delta,
+                    f"{res_b['score'] - res_a['score']:+.1f} pts",
                 )
                 st.caption(res_b["verdict"])
 
@@ -260,8 +317,6 @@ with tab3:
     st.dataframe(top_global, use_container_width=True, hide_index=True)
 
 
-# ── Pied de page ──────────────────────────────────────────────────────────────
-
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 4 — Carte par Département
 # ─────────────────────────────────────────────────────────────────────────────
@@ -280,14 +335,16 @@ with tab4:
     )
 
     if prenom_map:
-        with st.spinner("Chargement des données INSEE départementales…"):
-            dpt_df = load_dpt()
-            geojson = load_geojson()
+        dpt_df, total_by_dpt = get_dpt_data()
+        geojson = get_geojson()
 
-        dept_data = get_dept_data(dpt_df, prenom_map)
+        dept_data = get_dept_data(dpt_df, prenom_map, total_by_dpt)
 
         if dept_data is None:
-            st.warning(f"**{prenom_map}** : introuvable dans le fichier INSEE. Soit ce prénom est rarissime, soit il s'épelle autrement — l'INSEE est pointilleux.")
+            st.warning(
+                f"**{prenom_map}** : introuvable dans le fichier INSEE. "
+                "Soit ce prénom est rarissime, soit il s'épelle autrement — l'INSEE est pointilleux."
+            )
         else:
             total_naissances = int(dept_data["count_prenom"].sum())
             st.caption(f"Total naissances recensées (1900-2024, France métro) : **{total_naissances:,}**")
@@ -305,10 +362,7 @@ with tab4:
                 labels={"indice": "Indice", "count_prenom": "Naissances", "pct": "% naissances"},
                 title=f"Popularité de « {prenom_map} » par département",
             )
-            fig.update_geos(
-                fitbounds="locations",
-                visible=False,
-            )
+            fig.update_geos(fitbounds="locations", visible=False)
             fig.update_layout(
                 height=550,
                 coloraxis_colorbar=dict(title="Indice", tickformat=".1f"),
@@ -335,18 +389,14 @@ with tab5:
         "de popularité de chaque prénom (INSEE naissances 1900-2024)."
     )
 
-    with st.spinner("Chargement des données INSEE nationales…"):
-        nat_df    = load_nat()
-        peak_df   = build_peak_years(nat_df)
-        dec_scores = build_decade_scores(scores, peak_df)
-        dec_summary = decade_summary(dec_scores)
+    peak_df, dec_scores, dec_sum = get_decade_data(scores)
 
     if dec_scores.empty:
         st.error("Impossible de charger les données INSEE nationales.")
     else:
         # ── Vue globale : score moyen par décennie ─────────────────────────
         fig_bar = px.bar(
-            dec_summary,
+            dec_sum,
             x="decade_label",
             y="score_moyen",
             text="score_moyen",
@@ -376,7 +426,7 @@ with tab5:
 
         # ── Tableau récap ──────────────────────────────────────────────────
         st.subheader("Récap par génération")
-        display = dec_summary[[
+        display = dec_sum[[
             "decade_vibe", "decade_label", "score_moyen", "nb_prenoms",
             "top_prenom", "top_score", "bottom_prenom", "bottom_score"
         ]].copy()
@@ -396,22 +446,28 @@ with tab5:
         )
         if prenom_dec:
             result_dec = lookup(prenom_dec, long, scores)
-            from src.insee import normalize as _norm
-            norm_dec = _norm(prenom_dec)
+            norm_dec = normalize(prenom_dec)
             peak_row = peak_df[peak_df["prenom_norm"] == norm_dec]
 
             if result_dec is None:
-                st.warning(f"**{prenom_dec}** : absent du dataset bac. Moins de 40 bacheliers portant ce prénom — trop rare pour être jugé.")
+                st.warning(_absent_msg(prenom_dec))
             elif peak_row.empty:
-                st.warning(f"**{prenom_dec}** : absent du fichier INSEE naissances. Ce prénom échappe à toute classification générationnelle.")
+                st.warning(
+                    f"**{prenom_dec}** : absent du fichier INSEE naissances. "
+                    "Ce prénom échappe à toute classification générationnelle."
+                )
             else:
                 peak_year  = int(peak_row.iloc[0]["peak_year"])
                 decade     = (peak_year // 10) * 10
-                vibe       = {1950:"📻",1960:"✌️",1970:"🕺",1980:"📼",1990:"📟",2000:"💿",2010:"📱"}.get(decade,"🎓")
+                vibe       = DECADE_VIBES.get(decade, "🎓")
                 dec_label  = f"Années {decade if decade < 2000 else str(decade)}"
 
                 # Rang dans la décennie
-                peers = dec_scores[dec_scores["decade"] == decade].sort_values("score", ascending=False).reset_index(drop=True)
+                peers = (
+                    dec_scores[dec_scores["decade"] == decade]
+                    .sort_values("score", ascending=False)
+                    .reset_index(drop=True)
+                )
                 rank_in_dec = peers[peers["prenom"].str.lower() == result_dec["prenom"].lower()].index
                 rank_str = f"{int(rank_in_dec[0]) + 1}/{len(peers)}" if len(rank_in_dec) else "N/A"
 
@@ -420,12 +476,14 @@ with tab5:
                 col2.metric("Score Bac", f"{result_dec['score']:.1f} %")
                 col3.metric("Rang dans sa génération", rank_str)
 
-                st.info(f"**{result_dec['prenom']}** est un prénom des {dec_label}. "
-                        f"Dans sa génération, il se classe **{rank_str}**.")
+                st.info(
+                    f"**{result_dec['prenom']}** est un prénom des {dec_label}. "
+                    f"Dans sa génération, il se classe **{rank_str}**."
+                )
 
                 # Top/bottom de la décennie
-                top3   = peers.head(3)["prenom"].tolist()
-                bot3   = peers.tail(3)["prenom"].tolist()
+                top3 = peers.head(3)["prenom"].tolist()
+                bot3 = peers.tail(3)["prenom"].tolist()
                 st.caption(f"🏆 Top 3 de ta génération : {', '.join(top3)}")
                 st.caption(f"💀 Flop 3 : {', '.join(bot3)}")
 

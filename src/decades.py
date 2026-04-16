@@ -8,7 +8,7 @@ avec le score de prestige académique.
 
 import pandas as pd
 
-from src.insee import normalize
+from src.normalize import normalize
 
 DECADE_LABELS = {
     1950: "Années 50",
@@ -20,7 +20,6 @@ DECADE_LABELS = {
     2010: "Années 2010",
 }
 
-# Emoji d'ambiance par décennie (pour le fun)
 DECADE_VIBES = {
     1950: "📻",
     1960: "✌️",
@@ -74,14 +73,13 @@ def build_decade_scores(scores: pd.DataFrame, peak_df: pd.DataFrame) -> pd.DataF
 
 def decade_summary(decade_scores: pd.DataFrame) -> pd.DataFrame:
     """
-    Agrégat par décennie : score moyen, médiane, top prénom, bottom prénom.
+    Agrégat par décennie : score moyen, top prénom, bottom prénom.
     """
     def _agg(g: pd.DataFrame) -> pd.Series:
         top    = g.nlargest(1, "score").iloc[0]
         bottom = g.nsmallest(1, "score").iloc[0]
         return pd.Series({
             "score_moyen":  round(g["score"].mean(), 2),
-            "score_median": round(g["score"].median(), 2),
             "nb_prenoms":   len(g),
             "top_prenom":   top["prenom"],
             "top_score":    round(top["score"], 1),
