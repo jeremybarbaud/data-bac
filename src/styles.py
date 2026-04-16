@@ -12,21 +12,21 @@ Palette :
 import streamlit as st
 
 # ── Tokens ────────────────────────────────────────────────────────────────────
-PRIMARY          = "#001360"
-SECONDARY        = "#775a19"
-TERTIARY         = "#470003"
-SURFACE          = "#faf9f5"
-SURFACE_LOW      = "#f4f4f0"
+PRIMARY           = "#001360"
+SECONDARY         = "#775a19"
+TERTIARY          = "#470003"
+SURFACE           = "#faf9f5"
+SURFACE_LOW       = "#f4f4f0"
 SURFACE_CONTAINER = "#efeeea"
-SURFACE_HIGH     = "#e9e8e4"
-SURFACE_HIGHEST  = "#e3e2df"
-ON_SURFACE       = "#1b1c1a"
-ON_SURFACE_VAR   = "#444653"
-OUTLINE_VAR      = "rgba(197,197,213,0.3)"
-SEC_CONTAINER    = "#fed488"
+SURFACE_HIGH      = "#e9e8e4"
+SURFACE_HIGHEST   = "#e3e2df"
+ON_SURFACE        = "#1b1c1a"
+ON_SURFACE_VAR    = "#444653"
+OUTLINE_VAR       = "rgba(197,197,213,0.3)"
+SEC_CONTAINER     = "#fed488"
 
-FONT_HEADLINE    = "'Newsreader', Georgia, serif"
-FONT_BODY        = "'Inter', system-ui, sans-serif"
+FONT_HEADLINE = "'Newsreader', Georgia, serif"
+FONT_BODY     = "'Inter', system-ui, sans-serif"
 
 _CSS = f"""
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..900;1,6..72,300..900&family=Inter:wght@300..800&display=swap" rel="stylesheet">
@@ -36,11 +36,11 @@ _CSS = f"""
    1. RESET STREAMLIT CHROME
    ══════════════════════════════════════════════════════════════════════ */
 #MainMenu, footer, header {{ visibility: hidden !important; height: 0 !important; }}
-[data-testid="stHeader"]    {{ display: none !important; }}
-[data-testid="stToolbar"]   {{ display: none !important; }}
-[data-testid="stDecoration"]{{ display: none !important; }}
-.stDeployButton             {{ display: none !important; }}
-[data-testid="stStatusWidget"] {{ display: none !important; }}
+[data-testid="stHeader"]      {{ display: none !important; }}
+[data-testid="stToolbar"]     {{ display: none !important; }}
+[data-testid="stDecoration"]  {{ display: none !important; }}
+.stDeployButton               {{ display: none !important; }}
+[data-testid="stStatusWidget"]{{ display: none !important; }}
 
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -53,20 +53,17 @@ html, body, .stApp, [data-testid="stAppViewContainer"],
     color: {ON_SURFACE} !important;
 }}
 
-/* Block container */
 .block-container {{
     padding-top: 2.5rem !important;
-    padding-bottom: 4rem !important;
-    max-width: 1100px !important;
+    padding-bottom: 5rem !important;
+    max-width: 860px !important;
 }}
 
-/* Headings → Newsreader */
 h1, h2, h3, h4, h5, h6 {{
     font-family: {FONT_HEADLINE} !important;
     color: {PRIMARY} !important;
 }}
 
-/* Paragraphes */
 p {{ font-family: {FONT_BODY}; }}
 
 
@@ -75,22 +72,22 @@ p {{ font-family: {FONT_BODY}; }}
    ══════════════════════════════════════════════════════════════════════ */
 .stTabs [data-baseweb="tab-list"] {{
     background: transparent !important;
-    border-bottom: 1px solid {OUTLINE_VAR} !important;
-    gap: 0.25rem !important;
+    border-bottom: 1px solid rgba(0,19,96,0.12) !important;
+    gap: 0 !important;
     padding: 0 !important;
 }}
 .stTabs [data-baseweb="tab"] {{
-    font-family: {FONT_HEADLINE} !important;
-    font-size: 1rem !important;
-    font-style: italic !important;
-    font-weight: 400 !important;
-    color: {ON_SURFACE_VAR} !important;
+    font-family: {FONT_BODY} !important;
+    font-size: 0.85rem !important;
+    font-style: normal !important;
+    font-weight: 500 !important;
+    color: #666 !important;
     background: transparent !important;
     border: none !important;
     border-bottom: 2px solid transparent !important;
-    padding: 0.6rem 1.2rem !important;
+    padding: 0.6rem 1.4rem !important;
     margin: 0 !important;
-    letter-spacing: -0.01em !important;
+    letter-spacing: normal !important;
     transition: color 0.2s !important;
 }}
 .stTabs [data-baseweb="tab"]:hover {{
@@ -107,14 +104,13 @@ p {{ font-family: {FONT_BODY}; }}
 .stTabs [data-baseweb="tab-border"] {{
     display: none !important;
 }}
-/* Panel spacing */
 .stTabs [data-baseweb="tab-panel"] {{
     padding: 2rem 0 0 !important;
 }}
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   4. CHAMPS TEXTE — "SIGNATURE LINE"
+   4. CHAMPS TEXTE — SIGNATURE LINE
    ══════════════════════════════════════════════════════════════════════ */
 .stTextInput > label,
 .stTextInput label p {{
@@ -125,11 +121,10 @@ p {{ font-family: {FONT_BODY}; }}
     letter-spacing: 0.14em !important;
     color: {SECONDARY} !important;
 }}
-/* Conteneur BaseWeb — c'est lui qui impose le fond sombre */
 .stTextInput [data-baseweb="input"] {{
     background: transparent !important;
     border: none !important;
-    border-bottom: 1px solid {OUTLINE_VAR} !important;
+    border-bottom: 1px solid rgba(0,19,96,0.15) !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     padding: 0 !important;
@@ -139,14 +134,13 @@ p {{ font-family: {FONT_BODY}; }}
     border-bottom: 1px solid {PRIMARY} !important;
     box-shadow: none !important;
 }}
-/* L'élément input lui-même */
 .stTextInput input {{
     background: transparent !important;
     border: none !important;
     border-radius: 0 !important;
-    padding: 0.75rem 0 !important;
+    padding: 0.9rem 0 !important;
     font-family: {FONT_HEADLINE} !important;
-    font-size: 1.5rem !important;
+    font-size: 1.75rem !important;
     font-style: italic !important;
     color: {PRIMARY} !important;
     box-shadow: none !important;
@@ -162,97 +156,10 @@ p {{ font-family: {FONT_BODY}; }}
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   5. MÉTRIQUES
+   5. RADIO BUTTONS
    ══════════════════════════════════════════════════════════════════════ */
-[data-testid="metric-container"] {{
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-}}
-[data-testid="stMetricLabel"] > div {{
-    font-family: {FONT_BODY} !important;
-    font-size: 0.55rem !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.13em !important;
-    color: {ON_SURFACE_VAR} !important;
-    overflow: visible !important;
-}}
-[data-testid="stMetricValue"] > div {{
-    font-family: {FONT_HEADLINE} !important;
-    font-size: 2.6rem !important;
-    font-weight: 900 !important;
-    color: {PRIMARY} !important;
-    letter-spacing: -0.03em !important;
-    line-height: 1 !important;
-}}
-[data-testid="stMetricDelta"] svg {{ display: none !important; }}
-[data-testid="stMetricDelta"] > div {{
-    font-family: {FONT_BODY} !important;
-    font-size: 0.7rem !important;
-    font-weight: 600 !important;
-}}
-
-
-/* ══════════════════════════════════════════════════════════════════════
-   6. BOUTONS
-   ══════════════════════════════════════════════════════════════════════ */
-.stButton > button {{
-    background-color: {PRIMARY} !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 0.125rem !important;
-    font-family: {FONT_BODY} !important;
-    font-size: 0.65rem !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.13em !important;
-    padding: 0.7rem 2rem !important;
-    transition: opacity 0.2s !important;
-}}
-.stButton > button:hover {{
-    opacity: 0.88 !important;
-    background-color: {PRIMARY} !important;
-}}
-
-
-/* ══════════════════════════════════════════════════════════════════════
-   7. ALERTES & MESSAGES
-   ══════════════════════════════════════════════════════════════════════ */
-[data-testid="stAlert"] {{
-    border-radius: 0 !important;
-    border: none !important;
-    border-left: 3px solid {PRIMARY} !important;
-    background: {SURFACE_LOW} !important;
-    padding: 1.25rem 1.5rem 1.25rem 1.75rem !important;
-}}
-[data-testid="stAlert"] p,
-[data-testid="stAlert"] [data-testid="stMarkdownContainer"] p {{
-    font-family: {FONT_HEADLINE} !important;
-    font-style: italic !important;
-    color: {PRIMARY} !important;
-    font-size: 1rem !important;
-}}
-/* Warning → Gold */
-div[data-baseweb="notification"][kind="warning"] {{
-    border-left-color: {SECONDARY} !important;
-}}
-div[data-baseweb="notification"][kind="error"] {{
-    border-left-color: {TERTIARY} !important;
-}}
-
-
-/* ══════════════════════════════════════════════════════════════════════
-   8. DIVIDERS
-   ══════════════════════════════════════════════════════════════════════ */
-hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
-
-
-/* ══════════════════════════════════════════════════════════════════════
-   9. SELECTBOX / RADIO / SLIDER
-   ══════════════════════════════════════════════════════════════════════ */
-.stRadio > label, .stSelectbox > label, .stSlider > label,
-.stRadio label p, .stSelectbox label p, .stSlider label p {{
+.stRadio > label,
+.stRadio label p {{
     font-family: {FONT_BODY} !important;
     font-size: 0.6rem !important;
     font-weight: 700 !important;
@@ -266,49 +173,139 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
     font-weight: 500 !important;
     color: {ON_SURFACE} !important;
 }}
-
-/* ── Radio : cercle ─── */
-[data-baseweb="radio"] label > div:first-child {{
-    border-color: rgba(0,19,96,0.4) !important;
+[data-baseweb="radio"] [role="radio"] {{
+    border-color: rgba(0,19,96,0.3) !important;
     background: transparent !important;
 }}
-[data-baseweb="radio"] [aria-checked="true"] > div:first-child {{
+[data-baseweb="radio"] [role="radio"][aria-checked="true"] {{
     background: {PRIMARY} !important;
     border-color: {PRIMARY} !important;
-    box-shadow: 0 0 0 3px rgba(0,19,96,0.12) !important;
 }}
-[data-baseweb="radio"] [aria-checked="true"] > div:first-child > div {{
+[data-baseweb="radio"] [role="radio"][aria-checked="true"]::after {{
     background: white !important;
-    width: 6px !important; height: 6px !important;
 }}
 
-/* ── Slider : thumb + track ─── */
+
+/* ══════════════════════════════════════════════════════════════════════
+   6. SLIDER
+   ══════════════════════════════════════════════════════════════════════ */
+.stSlider > label,
+.stSlider label p {{
+    font-family: {FONT_BODY} !important;
+    font-size: 0.6rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+    color: {ON_SURFACE_VAR} !important;
+}}
 [data-testid="stSlider"] [role="slider"] {{
-    background-color: {PRIMARY} !important;
+    background: {PRIMARY} !important;
     border-color: {PRIMARY} !important;
-    box-shadow: 0 2px 8px rgba(0,19,96,0.3) !important;
-    width: 16px !important; height: 16px !important;
+    width: 14px !important;
+    height: 14px !important;
+    box-shadow: 0 2px 6px rgba(0,19,96,0.25) !important;
 }}
-/* Filled track portion */
-[data-testid="stSlider"] [data-baseweb="slider"] > div > div:nth-child(2) {{
-    background-color: {PRIMARY} !important;
+[data-testid="stSlider"] [data-baseweb="slider"] > div > div:first-child > div:nth-child(2) {{
+    background: {PRIMARY} !important;
 }}
-/* Value label above thumb */
-[data-testid="stSlider"] [data-testid="stThumbValue"],
-[data-testid="stSlider"] div[class*="thumbValue"] {{
+[data-testid="stSlider"] [data-testid="stThumbValue"] {{
+    color: {PRIMARY} !important;
     font-family: {FONT_BODY} !important;
     font-size: 0.7rem !important;
     font-weight: 700 !important;
-    color: {PRIMARY} !important;
-    background: {SURFACE_CONTAINER} !important;
-    border-radius: 0 !important;
-    padding: 0.1rem 0.4rem !important;
 }}
 
-/* Selectbox container */
+
+/* ══════════════════════════════════════════════════════════════════════
+   7. MÉTRIQUES
+   ══════════════════════════════════════════════════════════════════════ */
+[data-testid="metric-container"] {{
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}}
+[data-testid="stMetricLabel"] > div {{
+    font-family: {FONT_BODY} !important;
+    font-size: 0.55rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.13em !important;
+    color: #666 !important;
+    overflow: visible !important;
+}}
+[data-testid="stMetricValue"] > div {{
+    font-family: {FONT_HEADLINE} !important;
+    font-size: 2.8rem !important;
+    font-weight: 900 !important;
+    color: {PRIMARY} !important;
+    letter-spacing: -0.03em !important;
+    line-height: 1 !important;
+}}
+[data-testid="stMetricDelta"] svg {{ display: none !important; }}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   8. BOUTONS
+   ══════════════════════════════════════════════════════════════════════ */
+.stButton > button {{
+    background-color: {PRIMARY} !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 2px !important;
+    font-family: {FONT_BODY} !important;
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+    padding: 0.7rem 2rem !important;
+    transition: opacity 0.2s !important;
+}}
+.stButton > button:hover {{
+    opacity: 0.88 !important;
+    background-color: {PRIMARY} !important;
+}}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   9. ALERTES & MESSAGES
+   ══════════════════════════════════════════════════════════════════════ */
+[data-testid="stAlert"] {{
+    border-radius: 0 !important;
+    border: none !important;
+    border-left: 3px solid {PRIMARY} !important;
+    background: #f4f4f0 !important;
+    padding: 1.25rem 1.5rem 1.25rem 1.75rem !important;
+}}
+[data-testid="stAlert"] p,
+[data-testid="stAlert"] [data-testid="stMarkdownContainer"] p {{
+    font-family: {FONT_HEADLINE} !important;
+    font-style: italic !important;
+    color: {PRIMARY} !important;
+    font-size: 1rem !important;
+}}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   10. DIVIDERS
+   ══════════════════════════════════════════════════════════════════════ */
+hr {{ border-color: rgba(0,19,96,0.1) !important; margin: 2.5rem 0 !important; }}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   11. SELECTBOX
+   ══════════════════════════════════════════════════════════════════════ */
+.stSelectbox > label,
+.stSelectbox label p {{
+    font-family: {FONT_BODY} !important;
+    font-size: 0.6rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+    color: {ON_SURFACE_VAR} !important;
+}}
 .stSelectbox [data-baseweb="select"] {{
     background: transparent !important;
-    border-bottom: 1px solid {OUTLINE_VAR} !important;
+    border-bottom: 1px solid rgba(0,19,96,0.15) !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
@@ -317,11 +314,11 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   10. DATAFRAMES
+   12. DATAFRAMES
    ══════════════════════════════════════════════════════════════════════ */
 .stDataFrame {{
     font-family: {FONT_BODY} !important;
-    font-size: 0.8rem !important;
+    font-size: 0.85rem !important;
     border: none !important;
 }}
 .stDataFrame thead th {{
@@ -330,37 +327,23 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
     font-weight: 700 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.1em !important;
-    color: {ON_SURFACE_VAR} !important;
-    background: {SURFACE_LOW} !important;
+    color: #666 !important;
+    background: #f4f4f0 !important;
     border: none !important;
 }}
 .stDataFrame tbody td {{
     font-family: {FONT_BODY} !important;
+    font-size: 0.85rem !important;
     border: none !important;
     color: {ON_SURFACE} !important;
 }}
 .stDataFrame tbody tr:nth-child(even) {{
-    background: {SURFACE_LOW} !important;
+    background: #f8f8f8 !important;
 }}
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   11. SIDEBAR
-   ══════════════════════════════════════════════════════════════════════ */
-[data-testid="stSidebar"] {{
-    background-color: {SURFACE_LOW} !important;
-    border-right: none !important;
-}}
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3 {{
-    font-family: {FONT_HEADLINE} !important;
-    color: {PRIMARY} !important;
-}}
-
-
-/* ══════════════════════════════════════════════════════════════════════
-   12. SPINNER
+   13. SPINNER
    ══════════════════════════════════════════════════════════════════════ */
 [data-testid="stSpinner"] p {{
     font-family: {FONT_BODY} !important;
@@ -373,10 +356,292 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
 
 
 /* ══════════════════════════════════════════════════════════════════════
-   13. COMPOSANTS CUSTOM (classes utilisées dans les HTML injectés)
+   14. COMPOSANTS CUSTOM (.es-*)
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Section header */
+/* Input hero wrapper */
+.es-input-hero {{
+    padding: 2.5rem 0 1rem;
+    border-bottom: 1px solid rgba(0,19,96,0.08);
+    margin-bottom: 2rem;
+}}
+
+/* Result container */
+.es-result {{
+    padding: 0;
+    margin-bottom: 0;
+}}
+
+/* Name */
+.es-name {{
+    font-family: {FONT_HEADLINE};
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 900;
+    color: {PRIMARY};
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    margin: 0 0 0.25rem;
+}}
+
+/* Gender pill */
+.es-gender-pill {{
+    font-family: {FONT_BODY};
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    border: 1px solid rgba(119,90,25,0.3);
+    padding: 0.2rem 0.6rem;
+    color: {SECONDARY};
+    display: inline-block;
+    margin-bottom: 1.5rem;
+}}
+
+/* Score row */
+.es-score-row {{
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 0.5rem 0 0.25rem;
+}}
+
+.es-score-num {{
+    font-family: {FONT_HEADLINE};
+    font-size: clamp(3rem, 7vw, 5rem);
+    font-weight: 900;
+    color: {PRIMARY};
+    letter-spacing: -0.04em;
+    line-height: 1;
+}}
+
+.es-score-unit {{
+    font-family: {FONT_HEADLINE};
+    font-style: italic;
+    font-size: 1.4rem;
+    color: {SECONDARY};
+}}
+
+.es-score-caption {{
+    font-family: {FONT_BODY};
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #888;
+    display: block;
+    margin-top: 0.2rem;
+}}
+
+/* Percentile bar */
+.es-pct-bar-wrap {{
+    margin: 1.25rem 0 0.5rem;
+    max-width: 420px;
+}}
+
+.es-pct-bar-track {{
+    height: 4px;
+    background: #e8e8e4;
+    border-radius: 2px;
+    position: relative;
+    margin-bottom: 0.4rem;
+}}
+
+.es-pct-bar-fill {{
+    height: 100%;
+    background: {PRIMARY};
+    border-radius: 2px;
+    transition: width 0.6s ease;
+}}
+
+.es-pct-label {{
+    font-family: {FONT_BODY};
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #666;
+}}
+
+/* Stats row */
+.es-stats-row {{
+    display: flex;
+    gap: 2rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0,19,96,0.08);
+}}
+
+.es-stat-item {{
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}}
+
+.es-stat-label {{
+    font-family: {FONT_BODY};
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #999;
+}}
+
+.es-stat-val {{
+    font-family: {FONT_BODY};
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: {PRIMARY};
+}}
+
+/* Verdict */
+.es-verdict {{
+    margin-top: 1.5rem;
+    padding: 1.75rem 2rem;
+    background: {PRIMARY};
+    color: white;
+}}
+
+.es-verdict-eyebrow {{
+    font-family: {FONT_BODY};
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: rgba(186,195,255,0.7);
+    display: block;
+    margin-bottom: 0.75rem;
+}}
+
+.es-verdict-stars {{
+    color: #fed488;
+    font-size: 1rem;
+    float: right;
+}}
+
+.es-verdict-text {{
+    font-family: {FONT_HEADLINE};
+    font-style: italic;
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.8;
+    margin: 0;
+}}
+
+/* Absent */
+.es-absent {{
+    border-left: 3px solid {SECONDARY};
+    background: #f4f4f0;
+    padding: 1.25rem 1.75rem;
+    margin-bottom: 1rem;
+}}
+
+.es-absent-text {{
+    font-family: {FONT_HEADLINE};
+    font-style: italic;
+    font-size: 1rem;
+    color: {ON_SURFACE};
+    margin: 0 0 0.5rem;
+}}
+
+.es-absent-pills {{
+    margin-top: 0.5rem;
+}}
+
+.es-pill {{
+    font-family: {FONT_BODY};
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: #e8e8e4;
+    padding: 0.2rem 0.65rem;
+    display: inline-block;
+    margin: 0.2rem 0.15rem 0 0;
+    color: {PRIMARY};
+    cursor: pointer;
+}}
+
+/* Duel */
+.es-duel-wrap {{
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.5rem;
+    align-items: stretch;
+    margin-bottom: 1.5rem;
+}}
+
+.es-duel-card {{
+    padding: 1.75rem 2rem;
+    background: #f4f4f0;
+}}
+
+.es-duel-card.winner {{
+    background: {PRIMARY};
+    color: white;
+}}
+
+.es-duel-name {{
+    font-family: {FONT_HEADLINE};
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    margin: 0 0 0.25rem;
+}}
+
+.es-duel-score {{
+    font-family: {FONT_HEADLINE};
+    font-size: 2.25rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    margin: 0.75rem 0 0.25rem;
+}}
+
+.es-duel-bar {{
+    height: 3px;
+    background: rgba(0,19,96,0.15);
+    margin: 0.5rem 0 0.75rem;
+}}
+
+.es-duel-caption {{
+    font-family: {FONT_HEADLINE};
+    font-style: italic;
+    font-size: 0.8rem;
+    color: #666;
+    line-height: 1.6;
+    margin-top: 0.75rem;
+}}
+
+.es-duel-card.winner .es-duel-caption {{
+    color: rgba(255,255,255,0.75);
+}}
+
+.es-vs {{
+    width: 3rem;
+    height: 3rem;
+    background: {PRIMARY};
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: {FONT_HEADLINE};
+    font-style: italic;
+    font-weight: 900;
+    font-size: 1.1rem;
+    align-self: center;
+    flex-shrink: 0;
+}}
+
+.es-duel-result {{
+    padding: 1rem 1.75rem;
+    background: {PRIMARY};
+    color: white;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+}}
+
+/* Section */
+.es-section {{
+    margin-bottom: 1.75rem;
+}}
+
 .es-eyebrow {{
     font-family: {FONT_BODY};
     font-size: 0.55rem;
@@ -385,306 +650,48 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
     letter-spacing: 0.16em;
     color: {SECONDARY};
     display: block;
-    margin-bottom: 0.75rem;
-}}
-.es-title {{
-    font-family: {FONT_HEADLINE};
-    font-weight: 900;
-    color: {PRIMARY};
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    margin: 0;
+    margin-bottom: 0.6rem;
 }}
 
-/* Hero result card */
-.es-result-card {{
-    background: {SURFACE_LOW};
-    padding: 2.5rem 3rem;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 0;
-}}
-.es-prenom-name {{
-    font-family: {FONT_HEADLINE};
-    font-size: clamp(3.5rem, 8vw, 6.5rem);
-    font-weight: 900;
-    color: {PRIMARY};
-    line-height: 1;
-    letter-spacing: -0.04em;
-    margin: 0 0 0.5rem;
-}}
-.es-score-block {{
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin: 1.5rem 0 0.5rem;
-}}
-.es-score-number {{
-    font-family: {FONT_HEADLINE};
-    font-size: clamp(3rem, 7vw, 5rem);
-    font-weight: 900;
-    color: {PRIMARY};
-    letter-spacing: -0.04em;
-    line-height: 1;
-}}
-.es-score-denom {{
-    font-family: {FONT_HEADLINE};
-    font-size: 1.5rem;
-    font-style: italic;
-    color: {SECONDARY};
-    line-height: 1;
-}}
-.es-score-label {{
-    font-family: {FONT_BODY};
-    font-size: 0.5rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.13em;
-    color: {ON_SURFACE_VAR};
-    display: block;
-    margin-top: 0.25rem;
-}}
-.es-badge {{
-    font-family: {FONT_BODY};
-    font-size: 0.5rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: {SECONDARY};
-    border: 1px solid rgba(119,90,25,0.25);
-    padding: 0.2rem 0.55rem;
-    display: inline-block;
-    margin-bottom: 1.5rem;
-}}
-.es-stat-row {{
-    display: flex;
-    gap: 2.5rem;
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid {OUTLINE_VAR};
-}}
-.es-stat {{
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-}}
-.es-stat-label {{
-    font-family: {FONT_BODY};
-    font-size: 0.5rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: rgba(68,70,83,0.6);
-}}
-.es-stat-value {{
-    font-family: {FONT_BODY};
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: {PRIMARY};
-}}
-
-/* Verdict card */
-.es-verdict-card {{
-    background: {PRIMARY};
-    color: white;
-    padding: 2.25rem 2.5rem;
-    margin-bottom: 1rem;
-}}
-.es-verdict-header {{
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1.25rem;
-}}
-.es-verdict-title {{
-    font-family: {FONT_HEADLINE};
-    font-size: 1.5rem;
-    font-style: italic;
-    color: white;
-    margin: 0;
-}}
-.es-verdict-star {{ color: {SEC_CONTAINER}; font-size: 1.5rem; }}
-.es-verdict-text {{
-    font-family: {FONT_BODY};
-    font-size: 0.9rem;
-    line-height: 1.75;
-    color: rgba(186,195,255,0.85);
-    margin-bottom: 1.25rem;
-}}
-.es-verdict-sig {{
-    font-family: {FONT_HEADLINE};
-    font-style: italic;
-    font-size: 0.95rem;
-    color: white;
-}}
-
-/* Percentile chip */
-.es-percentile {{
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: {SURFACE_CONTAINER};
-    padding: 0.35rem 0.9rem;
-    margin-top: 0.75rem;
-}}
-.es-percentile-num {{
-    font-family: {FONT_HEADLINE};
-    font-size: 1.2rem;
-    font-weight: 900;
-    color: {PRIMARY};
-}}
-.es-percentile-label {{
-    font-family: {FONT_BODY};
-    font-size: 0.5rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: {ON_SURFACE_VAR};
-}}
-
-/* VS Duel */
-.es-vs-badge {{
-    width: 3.5rem;
-    height: 3.5rem;
-    background: {PRIMARY};
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: {FONT_HEADLINE};
-    font-style: italic;
-    font-size: 1.2rem;
-    font-weight: 900;
-    transform: rotate(45deg);
-    flex-shrink: 0;
-    box-shadow: 0 4px 20px rgba(0,19,96,0.25);
-}}
-.es-vs-badge span {{ transform: rotate(-45deg); display: block; }}
-.es-duel-card-a {{
-    background: {SURFACE_LOW};
-    padding: 2rem 2rem 2rem;
-    flex: 1;
-}}
-.es-duel-card-b {{
-    background: {SURFACE_CONTAINER};
-    padding: 2rem 2rem 2rem;
-    flex: 1;
-}}
-.es-duel-name {{
+.es-h1 {{
     font-family: {FONT_HEADLINE};
     font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 900;
     color: {PRIMARY};
     letter-spacing: -0.03em;
-    margin: 0 0 0.25rem;
-    line-height: 1;
-}}
-.es-duel-score {{
-    font-family: {FONT_HEADLINE};
-    font-size: 2rem;
-    font-weight: 900;
-    color: {PRIMARY};
-    letter-spacing: -0.03em;
-    margin: 1rem 0 0.25rem;
-}}
-.es-bar-container {{
-    height: 4px;
-    background: {SURFACE_HIGH};
-    margin: 0.5rem 0 0.75rem;
-    position: relative;
-}}
-.es-bar-fill-a {{
-    height: 100%;
-    background: {PRIMARY};
-    transition: width 0.8s ease;
-}}
-.es-bar-fill-b {{
-    height: 100%;
-    background: {SECONDARY};
-    transition: width 0.8s ease;
-}}
-.es-verdict-caption {{
-    font-family: {FONT_HEADLINE};
-    font-style: italic;
-    font-size: 0.8rem;
-    color: {ON_SURFACE_VAR};
-    line-height: 1.6;
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid {OUTLINE_VAR};
-}}
-
-/* Section title */
-.es-section-title {{
-    font-family: {FONT_HEADLINE};
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 900;
-    color: {PRIMARY};
-    letter-spacing: -0.03em;
+    margin: 0 0 0.4rem;
     line-height: 1.05;
-    margin: 0 0 0.5rem;
-}}
-.es-section-subtitle {{
-    font-family: {FONT_HEADLINE};
-    font-style: italic;
-    font-size: 1.1rem;
-    color: {SECONDARY};
-    margin: 0 0 2rem;
 }}
 
-/* Absent message */
-.es-absent-card {{
-    background: {SURFACE_LOW};
-    border-left: 3px solid {SECONDARY};
-    padding: 1.5rem 2rem;
-    margin-bottom: 1rem;
-}}
-.es-absent-text {{
+.es-lead {{
     font-family: {FONT_HEADLINE};
     font-style: italic;
-    font-size: 1.05rem;
-    color: {ON_SURFACE};
-    margin: 0 0 0.5rem;
-}}
-.es-absent-suggestions {{
-    font-family: {FONT_BODY};
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: {ON_SURFACE_VAR};
-    margin: 0;
-}}
-.es-absent-pill {{
-    display: inline-block;
-    background: {SURFACE_CONTAINER};
-    padding: 0.2rem 0.6rem;
-    margin: 0.2rem 0.15rem 0 0;
-    font-family: {FONT_BODY};
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: {PRIMARY};
-    cursor: pointer;
+    font-size: 1rem;
+    color: #666;
+    margin: 0 0 1.5rem;
 }}
 
-/* Decade generation card */
+/* Generation cards */
 .es-gen-card {{
+    padding: 1.75rem 2rem;
     background: {PRIMARY};
     color: white;
-    padding: 2rem 2.5rem;
 }}
+
 .es-gen-vibe {{
     font-size: 2rem;
-    margin-bottom: 0.5rem;
     display: block;
+    margin-bottom: 0.5rem;
 }}
+
 .es-gen-label {{
     font-family: {FONT_HEADLINE};
     font-size: 1.75rem;
     font-weight: 900;
     color: white;
-    margin: 0 0 0.25rem;
+    margin: 0 0 0.2rem;
 }}
+
 .es-gen-peak {{
     font-family: {FONT_BODY};
     font-size: 0.55rem;
@@ -695,19 +702,82 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
     margin: 0;
 }}
 
-/* Diamond data point (chart decoration) */
-.diamond-point {{
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-    width: 8px; height: 8px;
-    background: {SECONDARY};
-    display: inline-block;
+/* Rank card */
+.es-rank-card {{
+    padding: 1.75rem 2rem;
+    background: #f4f4f0;
 }}
 
-/* No-line separator */
+.es-rank-num {{
+    font-family: {FONT_HEADLINE};
+    font-size: 2.25rem;
+    font-weight: 900;
+    color: {PRIMARY};
+    letter-spacing: -0.03em;
+}}
+
+.es-rank-caption {{
+    font-family: {FONT_BODY};
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 0.35rem;
+}}
+
+/* Hero */
+.es-hero {{
+    padding: 3rem 0 2rem;
+}}
+
+.es-hero-title {{
+    font-family: {FONT_HEADLINE};
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 900;
+    color: {PRIMARY};
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin: 0 0 1rem;
+}}
+
+.es-hero-lead {{
+    font-family: {FONT_BODY};
+    font-size: 0.95rem;
+    color: #444;
+    max-width: 500px;
+    line-height: 1.85;
+    margin: 0 0 2rem;
+}}
+
+.es-hero-stats {{
+    display: flex;
+    gap: 2.5rem;
+    border-top: 1px solid rgba(0,19,96,0.08);
+    padding-top: 1.25rem;
+}}
+
+.es-hero-stat-n {{
+    font-family: {FONT_HEADLINE};
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: {PRIMARY};
+    letter-spacing: -0.03em;
+}}
+
+.es-hero-stat-l {{
+    font-family: {FONT_BODY};
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #888;
+    display: block;
+    margin-bottom: 0.2rem;
+}}
+
+/* Rule */
 .es-rule {{
     border: none;
-    border-top: 1px solid {OUTLINE_VAR};
-    margin: 2rem 0;
+    border-top: 1px solid rgba(0,19,96,0.1);
+    margin: 2.5rem 0;
 }}
 
 </style>

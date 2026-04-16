@@ -18,8 +18,7 @@ import streamlit as st
 
 from src.components import (
     absent_card_html,
-    duel_card_html,
-    duel_header_html,
+    duel_cards_html,
     duel_result_html,
     gen_card_html,
     gen_rank_html,
@@ -131,7 +130,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 1 — ANTHOLOGIE (Mon Prénom)
+# TAB 1 — ANTHOLOGIE
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab1:
@@ -154,20 +153,16 @@ with tab1:
                 unsafe_allow_html=True,
             )
         else:
-            # ── Carte résultat ────────────────────────────────────────────────
             st.markdown(result_card_html(result), unsafe_allow_html=True)
-
-            # ── Verdict ───────────────────────────────────────────────────────
             st.markdown(verdict_card_html(result), unsafe_allow_html=True)
 
-            # ── Courbe d'évolution ────────────────────────────────────────────
+            # Courbe d'évolution
             hist_df = pd.DataFrame(result["history"])
             if not hist_df.empty and "proptb" in hist_df.columns:
                 nat_avg = get_nat_avg(long)
 
                 fig = go.Figure()
 
-                # Aire nationale
                 fig.add_trace(go.Scatter(
                     x=nat_avg["year"],
                     y=nat_avg["proptb_nat"],
@@ -179,7 +174,6 @@ with tab1:
                     hovertemplate="%{y:.1f} %<extra>Moy. nationale</extra>",
                 ))
 
-                # Courbe prénom
                 fig.add_trace(go.Scatter(
                     x=hist_df["year"],
                     y=hist_df["proptb"],
@@ -228,7 +222,7 @@ with tab1:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — LE DUEL (Comparateur VS)
+# TAB 2 — LE DUEL
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab2:
@@ -241,10 +235,8 @@ with tab2:
         unsafe_allow_html=True,
     )
 
-    col_a, col_vs, col_b = st.columns([5, 1, 5])
+    col_a, col_b = st.columns(2)
     prenom_a = col_a.text_input("Premier prénom", placeholder="ex : Kévin", key="vs_a")
-    with col_vs:
-        st.markdown(duel_header_html(), unsafe_allow_html=True)
     prenom_b = col_b.text_input("Second prénom", placeholder="ex : Adèle", key="vs_b")
 
     if prenom_a and prenom_b:
@@ -261,12 +253,7 @@ with tab2:
 
         if res_a and res_b:
             st.markdown(duel_result_html(res_a, res_b), unsafe_allow_html=True)
-
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(duel_card_html(res_a, side="a"), unsafe_allow_html=True)
-            with col2:
-                st.markdown(duel_card_html(res_b, side="b"), unsafe_allow_html=True)
+            st.markdown(duel_cards_html(res_a, res_b), unsafe_allow_html=True)
 
             # Graphique comparatif
             hist_a = pd.DataFrame(res_a["history"]).assign(prenom=res_a["prenom"])
@@ -312,7 +299,7 @@ with tab2:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 3 — TENDANCES (Top par Année)
+# TAB 3 — TENDANCES
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab3:
@@ -347,7 +334,6 @@ with tab3:
         sorted_top["label"] = sorted_top["prenom"] + "  (" + sorted_top["N"].astype(str) + ")"
         n = len(sorted_top)
 
-        # Dégradé monochrome Royal Blue : plus foncé = meilleur score
         bar_colors = [
             f"rgba(0,19,96,{0.30 + 0.65 * i / max(n - 1, 1):.2f})" for i in range(n)
         ]
@@ -400,7 +386,7 @@ with tab3:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 4 — CARTOGRAPHIE (Carte par Département)
+# TAB 4 — CARTOGRAPHIE
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab4:
@@ -484,7 +470,6 @@ with tab4:
             )
             st.plotly_chart(fig, use_container_width=True)
 
-            # Top 10 départements
             top_depts = dept_data.nlargest(10, "indice")[["dpt", "count_prenom", "pct", "indice"]]
             top_depts = top_depts.copy()
             top_depts.columns = ["Département", "Naissances", "% naissances", "Indice"]
@@ -497,7 +482,7 @@ with tab4:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 5 — PALMARÈS (Classement des Décennies)
+# TAB 5 — PALMARÈS
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab5:
@@ -516,7 +501,7 @@ with tab5:
     if dec_scores.empty:
         st.error("Impossible de charger les données INSEE nationales.")
     else:
-        # Vue globale : score moyen par décennie — barres horizontales
+        # Vue globale : score moyen par décennie
         sorted_dec = dec_sum.sort_values("score_moyen").copy()
         n_dec = len(sorted_dec)
         dec_bar_colors = [
@@ -561,7 +546,7 @@ with tab5:
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
-        # Distribution (boxplot) — palette bleue cohérente, sans rouge
+        # Distribution (boxplot)
         DECADE_PALETTE = [
             "#001360", "#2d4de0", "#506aaa", "#775a19",
             "#b58900", "#3a6ea5", "#5f6a8a", "#a07830",
@@ -659,7 +644,6 @@ with tab5:
                 vibe      = DECADE_VIBES.get(decade, "🎓")
                 dec_label = f"Années {decade}"
 
-                # Rang dans la décennie
                 peers = (
                     dec_scores[dec_scores["decade"] == decade]
                     .sort_values("score", ascending=False)
