@@ -266,14 +266,45 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
     font-weight: 500 !important;
     color: {ON_SURFACE} !important;
 }}
-/* Radio button — cercle actif */
-.stRadio [data-baseweb="radio"] {{
+
+/* ── Radio : cercle ─── */
+[data-baseweb="radio"] label > div:first-child {{
+    border-color: rgba(0,19,96,0.4) !important;
     background: transparent !important;
 }}
-/* Slider track */
-.stSlider [data-testid="stSlider"] div[role="slider"] {{
+[data-baseweb="radio"] [aria-checked="true"] > div:first-child {{
     background: {PRIMARY} !important;
+    border-color: {PRIMARY} !important;
+    box-shadow: 0 0 0 3px rgba(0,19,96,0.12) !important;
 }}
+[data-baseweb="radio"] [aria-checked="true"] > div:first-child > div {{
+    background: white !important;
+    width: 6px !important; height: 6px !important;
+}}
+
+/* ── Slider : thumb + track ─── */
+[data-testid="stSlider"] [role="slider"] {{
+    background-color: {PRIMARY} !important;
+    border-color: {PRIMARY} !important;
+    box-shadow: 0 2px 8px rgba(0,19,96,0.3) !important;
+    width: 16px !important; height: 16px !important;
+}}
+/* Filled track portion */
+[data-testid="stSlider"] [data-baseweb="slider"] > div > div:nth-child(2) {{
+    background-color: {PRIMARY} !important;
+}}
+/* Value label above thumb */
+[data-testid="stSlider"] [data-testid="stThumbValue"],
+[data-testid="stSlider"] div[class*="thumbValue"] {{
+    font-family: {FONT_BODY} !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    color: {PRIMARY} !important;
+    background: {SURFACE_CONTAINER} !important;
+    border-radius: 0 !important;
+    padding: 0.1rem 0.4rem !important;
+}}
+
 /* Selectbox container */
 .stSelectbox [data-baseweb="select"] {{
     background: transparent !important;

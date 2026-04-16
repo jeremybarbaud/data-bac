@@ -196,19 +196,33 @@ with tab1:
                 ))
 
                 fig.update_layout(
-                    title=f"Évolution du % mention Très Bien — {result['prenom']} {result['sexe_label']}",
+                    paper_bgcolor=SURFACE,
+                    plot_bgcolor=SURFACE,
+                    title=dict(
+                        text=f"Évolution du % mention Très Bien — {result['prenom']} {result['sexe_label']}",
+                        font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
+                        x=0, xanchor="left",
+                    ),
                     xaxis=dict(
-                        title="",
-                        tickformat="d",
-                        dtick=1,
+                        title="", tickformat="d", dtick=1,
+                        showgrid=False, zeroline=False, showline=False,
+                        tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
                     ),
                     yaxis=dict(
-                        title="% Mention Très Bien",
+                        title="% Mention TB",
                         rangemode="tozero",
+                        showgrid=True, gridcolor="rgba(197,197,213,0.25)",
+                        zeroline=False, showline=False,
+                        tickformat=".0f", ticksuffix=" %",
+                        tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
                     ),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                    legend=dict(
+                        orientation="h", yanchor="bottom", y=1.02,
+                        xanchor="right", x=1,
+                        font=dict(family="Inter, sans-serif", size=11),
+                    ),
                     hovermode="x unified",
-                    height=380,
+                    height=360,
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
@@ -274,9 +288,25 @@ with tab2:
                 line=dict(width=2.5),
             )
             fig.update_layout(
+                paper_bgcolor=SURFACE,
+                plot_bgcolor=SURFACE,
                 hovermode="x unified",
                 height=360,
-                xaxis=dict(tickformat="d", dtick=1),
+                xaxis=dict(
+                    tickformat="d", dtick=1,
+                    showgrid=False, zeroline=False, showline=False,
+                    tickfont=dict(family="Inter, sans-serif", size=10),
+                ),
+                yaxis=dict(
+                    showgrid=True, gridcolor="rgba(197,197,213,0.25)",
+                    zeroline=False, showline=False,
+                    tickformat=".0f", ticksuffix=" %",
+                    tickfont=dict(family="Inter, sans-serif", size=10),
+                ),
+                title=dict(
+                    font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
+                    x=0, xanchor="left",
+                ),
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -313,30 +343,47 @@ with tab3:
     if top.empty:
         st.info("Pas assez de données pour les filtres sélectionnés.")
     else:
-        top["label"] = top["prenom"] + "  (" + top["N"].astype(str) + ")"
+        sorted_top = top.sort_values("proptb").copy()
+        sorted_top["label"] = sorted_top["prenom"] + "  (" + sorted_top["N"].astype(str) + ")"
+        n = len(sorted_top)
 
-        fig = px.bar(
-            top.sort_values("proptb"),
-            x="proptb",
-            y="label",
+        # Dégradé monochrome Royal Blue : plus foncé = meilleur score
+        bar_colors = [
+            f"rgba(0,19,96,{0.30 + 0.65 * i / max(n - 1, 1):.2f})" for i in range(n)
+        ]
+
+        fig = go.Figure(go.Bar(
+            y=sorted_top["label"],
+            x=sorted_top["proptb"],
             orientation="h",
-            title=f"Top {n_top} — % mention Très Bien · {year_sel}",
-            labels={"proptb": "% Mention Très Bien", "label": ""},
-            color="proptb",
-            color_continuous_scale=TB_COLORSCALE,
-            text="proptb",
-        )
-        fig.update_traces(
-            texttemplate="%{text:.1f} %",
+            marker=dict(color=bar_colors, line=dict(width=0)),
+            text=[f"{v:.1f} %" for v in sorted_top["proptb"]],
             textposition="outside",
-            textfont=dict(size=10),
-            marker=dict(line=dict(width=0)),
-        )
+            textfont=dict(family="Inter, system-ui, sans-serif", size=10, color="#444653"),
+            hovertemplate="<b>%{y}</b><br>% Mention TB : %{x:.1f} %<extra></extra>",
+        ))
         fig.update_layout(
-            coloraxis_showscale=False,
-            yaxis={"categoryorder": "total ascending"},
-            xaxis_title="% Mention Très Bien",
-            height=max(420, n_top * 32),
+            paper_bgcolor=SURFACE,
+            plot_bgcolor=SURFACE,
+            title=dict(
+                text=f"Top {n_top} — % mention Très Bien · {year_sel}",
+                font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
+                x=0, xanchor="left",
+            ),
+            xaxis=dict(
+                showgrid=False, zeroline=False, showline=False,
+                title="",
+                tickformat=".0f", ticksuffix=" %",
+                range=[0, sorted_top["proptb"].max() * 1.18],
+                tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
+            ),
+            yaxis=dict(
+                showgrid=False, zeroline=False, showline=False,
+                title="", categoryorder="total ascending",
+                tickfont=dict(family="Inter, sans-serif", size=11, color="#1b1c1a"),
+            ),
+            margin=dict(l=0, r=60, t=48, b=16),
+            height=max(420, n_top * 38),
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -469,34 +516,59 @@ with tab5:
     if dec_scores.empty:
         st.error("Impossible de charger les données INSEE nationales.")
     else:
-        # Vue globale : score moyen par décennie
-        fig_bar = px.bar(
-            dec_sum,
-            x="decade_label",
-            y="score_moyen",
-            text="score_moyen",
-            color="score_moyen",
-            color_continuous_scale=TB_COLORSCALE,
-            title="Score moyen de mention TB par génération de prénoms",
-            labels={"decade_label": "Génération", "score_moyen": "Score moyen (% TB)"},
-            hover_data={"nb_prenoms": True, "top_prenom": True, "bottom_prenom": True},
-        )
-        fig_bar.update_traces(
-            texttemplate="%{text:.1f} %",
+        # Vue globale : score moyen par décennie — barres horizontales
+        sorted_dec = dec_sum.sort_values("score_moyen").copy()
+        n_dec = len(sorted_dec)
+        dec_bar_colors = [
+            f"rgba(0,19,96,{0.30 + 0.65 * i / max(n_dec - 1, 1):.2f})" for i in range(n_dec)
+        ]
+        fig_bar = go.Figure(go.Bar(
+            y=sorted_dec["decade_label"],
+            x=sorted_dec["score_moyen"],
+            orientation="h",
+            marker=dict(color=dec_bar_colors, line=dict(width=0)),
+            text=[f"{v:.1f} %" for v in sorted_dec["score_moyen"]],
             textposition="outside",
-            textfont=dict(size=10),
-            marker=dict(line=dict(width=0)),
+            textfont=dict(family="Inter, sans-serif", size=11, color="#444653"),
+            customdata=sorted_dec[["nb_prenoms", "top_prenom", "bottom_prenom"]].values,
+            hovertemplate=(
+                "<b>%{y}</b><br>Score moyen : %{x:.1f} %<br>"
+                "Prénoms : %{customdata[0]}<br>"
+                "🏆 %{customdata[1]}<br>💀 %{customdata[2]}<extra></extra>"
+            ),
+        ))
+        fig_bar.update_layout(
+            paper_bgcolor=SURFACE,
+            plot_bgcolor=SURFACE,
+            title=dict(
+                text="Score moyen de mention TB par génération",
+                font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
+                x=0, xanchor="left",
+            ),
+            xaxis=dict(
+                showgrid=False, zeroline=False, showline=False,
+                title="", tickformat=".1f", ticksuffix=" %",
+                range=[0, sorted_dec["score_moyen"].max() * 1.2],
+                tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
+            ),
+            yaxis=dict(
+                showgrid=False, zeroline=False, showline=False,
+                title="", categoryorder="total ascending",
+                tickfont=dict(family="Inter, sans-serif", size=12, color="#1b1c1a"),
+            ),
+            margin=dict(l=0, r=60, t=48, b=16),
+            height=380,
         )
-        fig_bar.update_layout(coloraxis_showscale=False, showlegend=False, height=380)
         st.plotly_chart(fig_bar, use_container_width=True)
 
-        # Distribution (boxplot)
+        # Distribution (boxplot) — palette bleue cohérente, sans rouge
+        DECADE_PALETTE = [
+            "#001360", "#2d4de0", "#506aaa", "#775a19",
+            "#b58900", "#3a6ea5", "#5f6a8a", "#a07830",
+        ]
         decade_colors = {
-            label: col
-            for label, col in zip(
-                dec_scores["decade_label"].unique(),
-                [PRIMARY, SECONDARY, TERTIARY, "#2d4de0", "#b58900", "#78002b", "#5f6a8a"],
-            )
+            label: DECADE_PALETTE[i % len(DECADE_PALETTE)]
+            for i, label in enumerate(sorted(dec_scores["decade_label"].unique()))
         }
         fig_box = px.box(
             dec_scores,
@@ -510,10 +582,25 @@ with tab5:
             color_discrete_map=decade_colors,
         )
         fig_box.update_traces(
-            marker=dict(size=4, opacity=0.5),
+            marker=dict(size=4, opacity=0.6),
             line=dict(width=1.5),
         )
-        fig_box.update_layout(showlegend=False, height=380)
+        fig_box.update_layout(
+            paper_bgcolor=SURFACE,
+            plot_bgcolor=SURFACE,
+            showlegend=False,
+            height=380,
+            xaxis=dict(
+                showgrid=False, zeroline=False, showline=False,
+                tickfont=dict(family="Inter, sans-serif", size=11),
+            ),
+            yaxis=dict(
+                showgrid=True, gridcolor="rgba(197,197,213,0.25)",
+                zeroline=False, showline=False,
+                tickformat=".0f", ticksuffix=" %",
+                tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
+            ),
+        )
         st.plotly_chart(fig_box, use_container_width=True)
 
         # Tableau récap
