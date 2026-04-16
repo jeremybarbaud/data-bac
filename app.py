@@ -35,7 +35,7 @@ from src.loader import load_long
 from src.normalize import normalize
 from src.plotly_theme import PRIMARY as _P, SECONDARY as _S, TB_COLORSCALE, apply_theme
 from src.scoring import compute_scores, lookup
-from src.styles import PRIMARY, SECONDARY, SURFACE, inject_css
+from src.styles import PRIMARY, SECONDARY, TERTIARY, SURFACE, inject_css
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 

@@ -116,7 +116,8 @@ p {{ font-family: {FONT_BODY}; }}
 /* ══════════════════════════════════════════════════════════════════════
    4. CHAMPS TEXTE — "SIGNATURE LINE"
    ══════════════════════════════════════════════════════════════════════ */
-.stTextInput > label {{
+.stTextInput > label,
+.stTextInput label p {{
     font-family: {FONT_BODY} !important;
     font-size: 0.6rem !important;
     font-weight: 700 !important;
@@ -124,10 +125,24 @@ p {{ font-family: {FONT_BODY}; }}
     letter-spacing: 0.14em !important;
     color: {SECONDARY} !important;
 }}
-.stTextInput input {{
+/* Conteneur BaseWeb — c'est lui qui impose le fond sombre */
+.stTextInput [data-baseweb="input"] {{
     background: transparent !important;
     border: none !important;
     border-bottom: 1px solid {OUTLINE_VAR} !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    transition: border-color 0.25s !important;
+}}
+.stTextInput [data-baseweb="input"]:focus-within {{
+    border-bottom: 1px solid {PRIMARY} !important;
+    box-shadow: none !important;
+}}
+/* L'élément input lui-même */
+.stTextInput input {{
+    background: transparent !important;
+    border: none !important;
     border-radius: 0 !important;
     padding: 0.75rem 0 !important;
     font-family: {FONT_HEADLINE} !important;
@@ -135,15 +150,13 @@ p {{ font-family: {FONT_BODY}; }}
     font-style: italic !important;
     color: {PRIMARY} !important;
     box-shadow: none !important;
-    transition: border-color 0.25s !important;
 }}
 .stTextInput input:focus {{
-    border-bottom: 1px solid {PRIMARY} !important;
     box-shadow: none !important;
     outline: none !important;
 }}
 .stTextInput input::placeholder {{
-    color: rgba(68,70,83,0.3) !important;
+    color: rgba(68,70,83,0.35) !important;
     font-style: italic !important;
 }}
 
@@ -238,7 +251,8 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
 /* ══════════════════════════════════════════════════════════════════════
    9. SELECTBOX / RADIO / SLIDER
    ══════════════════════════════════════════════════════════════════════ */
-.stRadio > label, .stSelectbox > label, .stSlider > label {{
+.stRadio > label, .stSelectbox > label, .stSlider > label,
+.stRadio label p, .stSelectbox label p, .stSlider label p {{
     font-family: {FONT_BODY} !important;
     font-size: 0.6rem !important;
     font-weight: 700 !important;
@@ -248,13 +262,26 @@ hr {{ border-color: {OUTLINE_VAR} !important; margin: 2rem 0 !important; }}
 }}
 .stRadio [data-testid="stMarkdownContainer"] p {{
     font-family: {FONT_BODY} !important;
-    font-size: 0.8rem !important;
+    font-size: 0.85rem !important;
     font-weight: 500 !important;
+    color: {ON_SURFACE} !important;
 }}
-/* Active radio */
-.stRadio [data-baseweb="radio"] [data-checked="true"] ~ span {{
-    color: {PRIMARY} !important;
-    font-weight: 700 !important;
+/* Radio button — cercle actif */
+.stRadio [data-baseweb="radio"] {{
+    background: transparent !important;
+}}
+/* Slider track */
+.stSlider [data-testid="stSlider"] div[role="slider"] {{
+    background: {PRIMARY} !important;
+}}
+/* Selectbox container */
+.stSelectbox [data-baseweb="select"] {{
+    background: transparent !important;
+    border-bottom: 1px solid {OUTLINE_VAR} !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-radius: 0 !important;
 }}
 
 
