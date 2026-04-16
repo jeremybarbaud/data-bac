@@ -64,7 +64,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 with tab1:
     prenom_input = st.text_input(
         "Saisis ton prénom",
-        placeholder="ex : Quitterie, Jérémy, Côme…",
+        placeholder="ex : Apolline, Sofiane, Gaëtan…",
         key="tab1_input",
     )
 
@@ -72,11 +72,15 @@ with tab1:
         result = lookup(prenom_input, long, scores)
 
         if result is None:
-            st.warning(
-                f"**{prenom_input}** n'est pas dans le dataset "
-                f"(moins de 40 bacheliers recensés sur 2012-2020)."
-            )
-            # Suggestions de prénoms proches
+            ABSENT_MSGS = [
+                f"**{prenom_input}** ? Inconnu au bataillon. Soit ce prénom est rarissime, soit vos parents ont vraiment voulu vous démarquer.",
+                f"**{prenom_input}** n'a pas laissé assez de traces sur les bancs du lycée pour figurer dans nos données. Mystère ou originalité assumée ?",
+                f"Moins de 40 bacheliers répondant au nom de **{prenom_input}** sur 9 ans. Votre prénom est soit une œuvre d'art, soit une erreur de registre.",
+                f"**{prenom_input}** : introuvable. L'algorithme a cherché, il est épuisé. Essayez une orthographe alternative — ou acceptez d'être une légende.",
+            ]
+            import hashlib
+            msg_idx = int(hashlib.md5(prenom_input.encode()).hexdigest(), 16) % len(ABSENT_MSGS)
+            st.warning(ABSENT_MSGS[msg_idx])
             close = [p for p in all_prenoms if p.lower().startswith(prenom_input[:3].lower())][:8]
             if close:
                 st.caption("Prénoms proches disponibles : " + "  ·  ".join(close))
@@ -142,10 +146,10 @@ with tab1:
 
 with tab2:
     col_a, _vs, col_b = st.columns([5, 1, 5])
-    prenom_a = col_a.text_input("Prénom 1", placeholder="ex : Jérémy", key="vs_a")
+    prenom_a = col_a.text_input("Prénom 1", placeholder="ex : Kévin", key="vs_a")
     _vs.markdown("<br><br><div style='text-align:center;font-size:1.4rem;font-weight:bold'>VS</div>",
                  unsafe_allow_html=True)
-    prenom_b = col_b.text_input("Prénom 2", placeholder="ex : Quitterie", key="vs_b")
+    prenom_b = col_b.text_input("Prénom 2", placeholder="ex : Adele", key="vs_b")
 
     if prenom_a and prenom_b:
         res_a = lookup(prenom_a, long, scores)
@@ -153,7 +157,7 @@ with tab2:
 
         missing = [name for name, res in [(prenom_a, res_a), (prenom_b, res_b)] if res is None]
         for name in missing:
-            st.warning(f"**{name}** : absent du dataset (< 40 bacheliers recensés).")
+            st.warning(f"**{name}** : moins de 40 bacheliers recensés sur 2012-2020. Ce prénom refuse de se laisser étudier.")
 
         if res_a and res_b:
             diff = res_a["score"] - res_b["score"]
@@ -271,7 +275,7 @@ with tab4:
 
     prenom_map = st.text_input(
         "Prénom à cartographier",
-        placeholder="ex : Kévin, Inès, Maëlys…",
+        placeholder="ex : Jordan, Noemie, Baptiste…",
         key="map_input",
     )
 
@@ -283,7 +287,7 @@ with tab4:
         dept_data = get_dept_data(dpt_df, prenom_map)
 
         if dept_data is None:
-            st.warning(f"**{prenom_map}** : absent du fichier INSEE (prénom trop rare ou orthographe inconnue).")
+            st.warning(f"**{prenom_map}** : introuvable dans le fichier INSEE. Soit ce prénom est rarissime, soit il s'épelle autrement — l'INSEE est pointilleux.")
         else:
             total_naissances = int(dept_data["count_prenom"].sum())
             st.caption(f"Total naissances recensées (1900-2024, France métro) : **{total_naissances:,}**")
@@ -387,7 +391,7 @@ with tab5:
         st.subheader("Trouve ta génération")
         prenom_dec = st.text_input(
             "Ton prénom",
-            placeholder="ex : Jérémy, Lucie, Côme…",
+            placeholder="ex : Mathieu, Camille, Alexis…",
             key="decade_input",
         )
         if prenom_dec:
@@ -397,9 +401,9 @@ with tab5:
             peak_row = peak_df[peak_df["prenom_norm"] == norm_dec]
 
             if result_dec is None:
-                st.warning(f"**{prenom_dec}** absent du dataset bac.")
+                st.warning(f"**{prenom_dec}** : absent du dataset bac. Moins de 40 bacheliers portant ce prénom — trop rare pour être jugé.")
             elif peak_row.empty:
-                st.warning(f"**{prenom_dec}** absent du fichier INSEE naissances.")
+                st.warning(f"**{prenom_dec}** : absent du fichier INSEE naissances. Ce prénom échappe à toute classification générationnelle.")
             else:
                 peak_year  = int(peak_row.iloc[0]["peak_year"])
                 decade     = (peak_year // 10) * 10
