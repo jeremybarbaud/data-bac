@@ -30,6 +30,7 @@ from src.components import (
     verdict_card_html,
 )
 from src.decades import DECADE_VIBES, build_decade_scores, build_peak_years, decade_summary
+from src.enrichment import build_enriched_scores
 from src.geo import GEOJSON_URL, get_dept_data
 from src.insee import load_dpt, load_nat
 from src.loader import load_long
@@ -93,7 +94,14 @@ def _sanitize_prenom(raw: str) -> str:
 @st.cache_data(show_spinner="Chargement des données bac…")
 def get_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     long = load_long()
-    scores = compute_scores(long)
+    scores_tsv = compute_scores(long)
+    # Fusion avec le cache enrichi (scraping Coulmont) — ajoute les prénoms
+    # absents du TSV en format cumulé 2012-2020.
+    try:
+        nat_df = load_nat()
+    except Exception:
+        nat_df = None
+    scores = build_enriched_scores(scores_tsv, nat_df=nat_df)
     return long, scores
 
 
@@ -200,7 +208,67 @@ def _render_tab_anthologie() -> None:
         st.markdown(result_card_html(result), unsafe_allow_html=True)
         st.markdown(verdict_card_html(result), unsafe_allow_html=True)
 
-        # Courbe d'évolution
+        # Prénom scrape-only : pas de détail par année → note + breakdown mentions
+        if not result.get("history_available", True):
+            st.markdown(
+                '<div style="margin-top:1.5rem;padding:1rem 1.25rem;'
+                'background:#f4f4f0;border-left:3px solid #775a19;'
+                'font-family:\'Newsreader\',Georgia,serif;font-style:italic;'
+                'font-size:0.9rem;color:#444653">'
+                "Données cumulées 2012-2020 (l'évolution par année "
+                "n'est pas publiée pour ce prénom)."
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            # Graphique breakdown mentions
+            mentions = {
+                "Oral rattrapage": result.get("pct_oral"),
+                "Passable":        result.get("pct_passable"),
+                "Assez Bien":      result.get("pct_ab"),
+                "Bien":            result.get("pct_bien"),
+                "Très Bien":       result.get("pct_tb"),
+            }
+            mentions = {k: v for k, v in mentions.items() if v is not None}
+            if mentions:
+                n = len(mentions)
+                colors = [
+                    f"rgba(0,19,96,{0.25 + 0.65 * i / max(n - 1, 1):.2f})"
+                    for i in range(n)
+                ]
+                fig = go.Figure(go.Bar(
+                    x=list(mentions.keys()),
+                    y=list(mentions.values()),
+                    marker=dict(color=colors, line=dict(width=0)),
+                    text=[f"{v:.0f} %" for v in mentions.values()],
+                    textposition="outside",
+                    textfont=dict(family="Inter, sans-serif", size=11, color="#444653"),
+                    hovertemplate="<b>%{x}</b> : %{y:.0f} %<extra></extra>",
+                ))
+                fig.update_layout(
+                    paper_bgcolor=SURFACE,
+                    plot_bgcolor=SURFACE,
+                    title=dict(
+                        text=f"Répartition des mentions — {_esc(str(result['prenom']))}",
+                        font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
+                        x=0, xanchor="left",
+                    ),
+                    xaxis=dict(
+                        showgrid=False, zeroline=False, showline=False,
+                        tickfont=dict(family="Inter, sans-serif", size=11, color="#1b1c1a"),
+                    ),
+                    yaxis=dict(
+                        showgrid=True, gridcolor="rgba(197,197,213,0.25)",
+                        zeroline=False, showline=False,
+                        tickformat=".0f", ticksuffix=" %",
+                        tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
+                    ),
+                    margin=dict(l=0, r=0, t=48, b=16),
+                    height=320,
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            return
+
+        # Courbe d'évolution (TSV uniquement)
         hist_df = pd.DataFrame(result["history"])
         if not hist_df.empty and "proptb" in hist_df.columns:
             nat_avg = get_nat_avg(long)
