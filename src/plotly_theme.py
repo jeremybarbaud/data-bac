@@ -13,13 +13,17 @@ import plotly.graph_objects as go
 import plotly.io as pio
 
 # ── Tokens ────────────────────────────────────────────────────────────────────
-PRIMARY   = "#001360"
-SECONDARY = "#775a19"
-TERTIARY  = "#470003"
-SURFACE   = "#faf9f5"
-SURFACE_L = "#f4f4f0"
-ON_SURF   = "#1b1c1a"
-ON_SURF_V = "#444653"
+# Source unique : src/tokens.py. On ré-exporte sous les noms historiques pour
+# rétrocompat (app.py importe ON_SURF, PRIMARY, SECONDARY, TB_COLORSCALE…).
+from src.tokens import (
+    ON_SURFACE as ON_SURF,
+    ON_SURFACE_VAR as ON_SURF_V,
+    PRIMARY,
+    SECONDARY,
+    SURFACE,
+    SURFACE_LOW as SURFACE_L,
+    TERTIARY,
+)
 
 # Séquence de couleurs catégorielles
 COLOR_SEQ = [

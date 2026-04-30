@@ -20,10 +20,14 @@ import streamlit as st
 
 from src.components import (
     absent_card_html,
+    carto_meta_html,
+    data_note_html,
     duel_cards_html,
     duel_result_html,
+    footer_html,
     gen_card_html,
     gen_rank_html,
+    genflop_html,
     hero_html,
     result_card_html,
     section_header_html,
@@ -222,13 +226,10 @@ def _render_tab_anthologie() -> None:
         # Prénom scrape-only : pas de détail par année → note + breakdown mentions
         if not result.get("history_available", True):
             st.markdown(
-                '<div style="margin-top:1.5rem;padding:1rem 1.25rem;'
-                'background:#f4f4f0;border-left:3px solid #775a19;'
-                'font-family:\'Newsreader\',Georgia,serif;font-style:italic;'
-                'font-size:0.9rem;color:#444653">'
-                "Données cumulées 2012-2020 (l'évolution par année "
-                "n'est pas publiée pour ce prénom)."
-                '</div>',
+                data_note_html(
+                    "Données cumulées 2012-2020 — l'évolution par année "
+                    "n'est pas publiée pour ce prénom."
+                ),
                 unsafe_allow_html=True,
             )
             # Graphique breakdown mentions
@@ -500,11 +501,7 @@ def _render_tab_carto() -> None:
         else:
             total_naissances = int(dept_data["count_prenom"].sum())
             st.markdown(
-                f'<p style="font-family:\'Inter\',sans-serif;font-size:.7rem;'
-                f'font-weight:600;text-transform:uppercase;letter-spacing:.12em;'
-                f'color:#444653;margin-bottom:1.5rem">'
-                f'Total naissances recensées (1900-2024, France métro) — '
-                f'<strong style="color:#001360">{total_naissances:,}</strong></p>',
+                carto_meta_html(total_naissances),
                 unsafe_allow_html=True,
             )
 
@@ -716,24 +713,9 @@ def _render_tab_palmares() -> None:
                         unsafe_allow_html=True,
                     )
 
-                top3 = [_esc(str(p)) for p in peers.head(3)["prenom"].tolist()]
-                bot3 = [_esc(str(p)) for p in peers.tail(3)["prenom"].tolist()]
-
-                st.markdown(
-                    f'<div style="margin-top:1.5rem;display:flex;gap:2rem">'
-                    f'<div><span style="font-family:\'Inter\',sans-serif;font-size:.5rem;'
-                    f'font-weight:700;text-transform:uppercase;letter-spacing:.13em;'
-                    f'color:#444653;display:block;margin-bottom:.4rem">Top 3 de ta génération</span>'
-                    f'<span style="font-family:\'Newsreader\',serif;font-size:1rem;'
-                    f'font-weight:700;color:#001360">{" · ".join(top3)}</span></div>'
-                    f'<div><span style="font-family:\'Inter\',sans-serif;font-size:.5rem;'
-                    f'font-weight:700;text-transform:uppercase;letter-spacing:.13em;'
-                    f'color:#444653;display:block;margin-bottom:.4rem">Flop 3</span>'
-                    f'<span style="font-family:\'Newsreader\',serif;font-size:1rem;'
-                    f'font-weight:700;color:#470003">{" · ".join(bot3)}</span></div>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
+                top3 = peers.head(3)["prenom"].tolist()
+                bot3 = peers.tail(3)["prenom"].tolist()
+                st.markdown(genflop_html(top3, bot3), unsafe_allow_html=True)
 
 
 with tab5:
@@ -742,16 +724,4 @@ with tab5:
 
 # ── Pied de page ──────────────────────────────────────────────────────────────
 
-st.markdown(
-    f'<div style="border-top:1px solid rgba(197,197,213,0.3);'
-    f'margin-top:3rem;padding-top:1.5rem">'
-    f'<p style="font-family:\'Inter\',sans-serif;font-size:.65rem;'
-    f'color:#444653;line-height:2">'
-    f'Données bac : <a href="https://coulmont.com/bac" style="color:#001360">Baptiste Coulmont</a> · '
-    f'Résultats nominatifs publiés par les candidats · Bac général & technologique 2012-2020 · '
-    f'Données naissances : <a href="https://www.insee.fr/fr/statistiques/8595130" style="color:#001360">'
-    f'INSEE Fichier des prénoms</a> · '
-    f'Seuls les prénoms avec ≥ 40 bacheliers recensés sont inclus.'
-    f'</p></div>',
-    unsafe_allow_html=True,
-)
+st.markdown(footer_html(), unsafe_allow_html=True)

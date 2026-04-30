@@ -205,7 +205,7 @@ def duel_result_html(res_a: dict, res_b: dict) -> str:
     if abs(diff) < 0.5:
         return """
 <div class="es-duel-result">
-  <span style="font-family:'Newsreader',Georgia,serif;font-size:1.1rem;font-style:italic;color:rgba(255,255,255,0.9)">
+  <span class="es-duel-result-tie">
     Match nul — Vos prénoms sont statistiquement à égalité. Décidez à la courte paille.
   </span>
 </div>
@@ -218,8 +218,8 @@ def duel_result_html(res_a: dict, res_b: dict) -> str:
     l_name = _esc(str(loser["prenom"]))
     return f"""
 <div class="es-duel-result">
-  <span style="font-family:'Newsreader',Georgia,serif;font-size:1.4rem;font-weight:900;font-style:italic;color:#fed488">{w_name}</span>
-  <span style="font-family:'Inter',system-ui,sans-serif;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,0.7)">domine par {gap:.1f}&thinsp;pt{suffix} — {l_name} s'incline</span>
+  <span class="es-duel-result-winner">{w_name}</span>
+  <span class="es-duel-result-meta">domine par {gap:.1f}&thinsp;pt{suffix} — {l_name} s'incline</span>
 </div>
 """
 
@@ -249,7 +249,7 @@ def duel_cards_html(res_a: dict, res_b: dict) -> str:
 <div class="es-duel-wrap">
   <div class="{class_a}">
     <div class="es-duel-name">{name_a}</div>
-    <div class="es-duel-score">{score_a:.1f}&thinsp;<span style="font-size:1rem;font-weight:400;opacity:.7">% TB</span></div>
+    <div class="es-duel-score">{score_a:.1f}&thinsp;<span class="es-duel-score-unit">% TB</span></div>
     <div class="es-duel-bar"><div style="height:100%;background:{fill_a};width:{bar_a:.1f}%"></div></div>
     <div class="es-duel-caption">{verd_a}</div>
   </div>
@@ -280,6 +280,62 @@ def gen_card_html(vibe: str, label: str, peak_year: int) -> str:
   <p class="es-gen-peak">Pic de popularité : {p}</p>
 </div>
 """
+
+
+def data_note_html(message: str) -> str:
+    """Bandeau italique gold-bordered pour signaler une particularité du dataset
+    (ex. prénom scrape-only sans détail année par année).
+
+    ⚠️ ``message`` peut contenir de la saisie utilisateur — escape obligatoire.
+    """
+    return f'<div class="es-data-note">{_esc(str(message))}</div>'
+
+
+def genflop_html(top3: list, bot3: list) -> str:
+    """Bloc Top 3 / Flop 3 affiché sous une carte génération.
+
+    ⚠️ Les éléments des listes peuvent provenir du dataset (échappement déjà
+    appliqué à l'entrée par les appelants — on re-échappe par défense).
+    """
+    top = " · ".join(_esc(str(p)) for p in top3)
+    flop = " · ".join(_esc(str(p)) for p in bot3)
+    return f"""
+<div class="es-genflop">
+  <div>
+    <span class="es-stat-label">Top 3 de ta génération</span>
+    <span class="es-genflop-list">{top}</span>
+  </div>
+  <div>
+    <span class="es-stat-label">Flop 3</span>
+    <span class="es-genflop-list es-genflop-list--flop">{flop}</span>
+  </div>
+</div>
+"""
+
+
+def carto_meta_html(total_naissances: int) -> str:
+    """Sous-titre éditorial pour l'onglet Cartographie."""
+    return (
+        f'<p class="es-carto-meta">'
+        f'Total naissances recensées (1900-2024, France métro) — '
+        f'<strong>{total_naissances:,}</strong></p>'
+    )
+
+
+def footer_html() -> str:
+    """Pied de page éditorial avec sources et licence."""
+    return (
+        '<div class="es-footer"><p>'
+        'Données bac : '
+        '<a href="https://coulmont.com/bac">Baptiste Coulmont</a> · '
+        'Résultats nominatifs publiés par les candidats · '
+        'Bac général &amp; technologique 2012-2020 · '
+        'Données naissances : '
+        '<a href="https://www.insee.fr/fr/statistiques/8595130">'
+        'INSEE Fichier des prénoms</a> · '
+        'Seuls les prénoms avec ≥&nbsp;40 bacheliers recensés sont inclus.'
+        '</p></div>'
+    )
 
 
 def gen_rank_html(rank_str: str, total: int, prenom: str) -> str:
