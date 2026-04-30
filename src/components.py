@@ -43,24 +43,41 @@ def _percentile_label(pct: float) -> str:
 
 # ── Hero ───────────────────────────────────────────────────────────────────────
 
-def hero_html() -> str:
-    """Hero affiché avant toute saisie dans l'onglet Anthologie."""
-    return """
+def _format_n(n: int) -> str:
+    """Format compact : 1756 → '1 756', 2_300_000 → '2,3 M', 950000 → '950 k'."""
+    if n >= 1_000_000:
+        return f"{n/1_000_000:.1f}".rstrip("0").rstrip(".").replace(".", ",") + " M"
+    if n >= 100_000:
+        return f"{n/1000:.0f} k"
+    # Espaces fines insécables comme séparateur de milliers (typo française)
+    return f"{n:,}".replace(",", " ")
+
+
+def hero_html(n_prenoms: int = 417, n_bacheliers: int = 2_000_000) -> str:
+    """Hero affiché avant toute saisie dans l'onglet Anthologie.
+
+    Args:
+        n_prenoms: nombre de prénoms dans le dataset unifié (TSV + scrape).
+        n_bacheliers: somme des effectifs (cumul TSV année/année + scrape cumulé).
+    """
+    n_p = _format_n(int(n_prenoms))
+    n_b = _format_n(int(n_bacheliers))
+    return f"""
 <div class="es-hero">
   <span class="es-eyebrow">L'Érudit des Prénoms · Édition 2012-2020</span>
   <h1 class="es-hero-title">Votre prénom<br>méritait-il<br><em>la mention&nbsp;?</em></h1>
   <p class="es-hero-lead">
-    2 millions de résultats nominatifs du baccalauréat général et technologique.
+    {n_b}&nbsp;de résultats nominatifs du baccalauréat général et technologique.
     Entrez un prénom ci-dessous pour connaître son <strong>Score de Prestige Académique</strong>.
   </p>
   <div class="es-hero-stats">
     <div>
       <span class="es-hero-stat-l">Prénoms analysés</span>
-      <span class="es-hero-stat-n">417</span>
+      <span class="es-hero-stat-n">{n_p}</span>
     </div>
     <div>
       <span class="es-hero-stat-l">Bacheliers recensés</span>
-      <span class="es-hero-stat-n">2&nbsp;M+</span>
+      <span class="es-hero-stat-n">{n_b}</span>
     </div>
     <div>
       <span class="es-hero-stat-l">Années couvertes</span>

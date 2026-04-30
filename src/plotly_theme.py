@@ -55,10 +55,15 @@ FONT_HEADLINE = "Newsreader, Georgia, serif"
 
 
 def _make_template() -> go.layout.Template:
+    # Defaults choisis pour matcher l'usage réel dans app.py :
+    # - showgrid=False (chaque chart active la grille en y si besoin)
+    # - showline=False (pas d'axe visible — le design est minimaliste)
+    # - gridcolor préréglée pour quand un chart fait showgrid=True
     axis_common = dict(
         showgrid=False,
         zeroline=False,
-        showline=True,
+        showline=False,
+        gridcolor="rgba(197,197,213,0.25)",
         linecolor="rgba(197,197,213,0.4)",
         tickfont=dict(family=FONT_BODY, size=10, color=ON_SURF_V),
         title_font=dict(family=FONT_BODY, size=11, color=ON_SURF_V),
@@ -70,8 +75,9 @@ def _make_template() -> go.layout.Template:
         paper_bgcolor=SURFACE,
         plot_bgcolor=SURFACE,
         font=dict(family=FONT_BODY, size=12, color=ON_SURF),
+        # Taille 18 = ce qui est utilisé partout dans app.py
         title=dict(
-            font=dict(family=FONT_HEADLINE, size=22, color=PRIMARY),
+            font=dict(family=FONT_HEADLINE, size=18, color=PRIMARY),
             x=0,
             xanchor="left",
             pad=dict(l=0, b=12),
@@ -83,7 +89,7 @@ def _make_template() -> go.layout.Template:
         ),
         xaxis=axis_common,
         yaxis=axis_common,
-        margin=dict(l=0, r=0, t=48, b=8),
+        margin=dict(l=0, r=0, t=48, b=16),
         hoverlabel=dict(
             bgcolor="white",
             bordercolor="rgba(197,197,213,0.6)",
@@ -129,3 +135,21 @@ def apply_theme() -> None:
     """
     pio.templates[_TEMPLATE_NAME] = _make_template()
     pio.templates.default = _TEMPLATE_NAME
+
+
+def gradient_blue(n: int, alpha_start: float = 0.30, alpha_end: float = 0.95) -> list[str]:
+    """Génère une liste de ``n`` couleurs ``rgba(0,19,96, α)`` interpolées
+    linéairement entre ``alpha_start`` et ``alpha_end``.
+
+    Utile pour les bar charts ordonnés (gradient d'opacité du PRIMARY).
+    Centralise la formule qui était dupliquée dans app.py.
+    """
+    if n <= 0:
+        return []
+    if n == 1:
+        return [f"rgba(0,19,96,{alpha_end:.2f})"]
+    span = alpha_end - alpha_start
+    return [
+        f"rgba(0,19,96,{alpha_start + span * i / (n - 1):.2f})"
+        for i in range(n)
+    ]

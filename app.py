@@ -35,9 +35,15 @@ from src.geo import GEOJSON_URL, get_dept_data
 from src.insee import load_dpt, load_nat
 from src.loader import load_long
 from src.normalize import normalize
-from src.plotly_theme import PRIMARY as _P, SECONDARY as _S, TB_COLORSCALE, apply_theme
+from src.plotly_theme import (
+    ON_SURF,
+    PRIMARY as _P,
+    SECONDARY as _S,
+    apply_theme,
+    gradient_blue,
+)
 from src.scoring import compute_scores, lookup
-from src.styles import PRIMARY, SECONDARY, TERTIARY, SURFACE, inject_css
+from src.styles import PRIMARY, SECONDARY, SURFACE, inject_css
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -193,7 +199,12 @@ def _render_tab_anthologie() -> None:
     prenom_input = _sanitize_prenom(raw)
 
     if not prenom_input:
-        st.markdown(hero_html(), unsafe_allow_html=True)
+        n_prenoms = len(scores)
+        n_bacheliers = int(scores["effectif_total"].sum())
+        st.markdown(
+            hero_html(n_prenoms=n_prenoms, n_bacheliers=n_bacheliers),
+            unsafe_allow_html=True,
+        )
         return
 
     result = lookup(prenom_input, long, scores)
@@ -230,39 +241,17 @@ def _render_tab_anthologie() -> None:
             }
             mentions = {k: v for k, v in mentions.items() if v is not None}
             if mentions:
-                n = len(mentions)
-                colors = [
-                    f"rgba(0,19,96,{0.25 + 0.65 * i / max(n - 1, 1):.2f})"
-                    for i in range(n)
-                ]
                 fig = go.Figure(go.Bar(
                     x=list(mentions.keys()),
                     y=list(mentions.values()),
-                    marker=dict(color=colors, line=dict(width=0)),
+                    marker=dict(color=gradient_blue(len(mentions), 0.25, 0.90)),
                     text=[f"{v:.0f} %" for v in mentions.values()],
                     textposition="outside",
-                    textfont=dict(family="Inter, sans-serif", size=11, color="#444653"),
                     hovertemplate="<b>%{x}</b> : %{y:.0f} %<extra></extra>",
                 ))
                 fig.update_layout(
-                    paper_bgcolor=SURFACE,
-                    plot_bgcolor=SURFACE,
-                    title=dict(
-                        text=f"Répartition des mentions — {_esc(str(result['prenom']))}",
-                        font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
-                        x=0, xanchor="left",
-                    ),
-                    xaxis=dict(
-                        showgrid=False, zeroline=False, showline=False,
-                        tickfont=dict(family="Inter, sans-serif", size=11, color="#1b1c1a"),
-                    ),
-                    yaxis=dict(
-                        showgrid=True, gridcolor="rgba(197,197,213,0.25)",
-                        zeroline=False, showline=False,
-                        tickformat=".0f", ticksuffix=" %",
-                        tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
-                    ),
-                    margin=dict(l=0, r=0, t=48, b=16),
+                    title=f"Répartition des mentions — {_esc(str(result['prenom']))}",
+                    yaxis=dict(showgrid=True, tickformat=".0f", ticksuffix=" %"),
                     height=320,
                 )
                 st.plotly_chart(fig, use_container_width=True)
@@ -302,31 +291,15 @@ def _render_tab_anthologie() -> None:
             ))
 
             fig.update_layout(
-                paper_bgcolor=SURFACE,
-                plot_bgcolor=SURFACE,
-                title=dict(
-                    text=f"Évolution du % mention Très Bien — {_esc(str(result['prenom']))} {_esc(str(result['sexe_label']))}",
-                    font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
-                    x=0, xanchor="left",
-                ),
-                xaxis=dict(
-                    title="", tickformat="d", dtick=1,
-                    showgrid=False, zeroline=False, showline=False,
-                    tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
-                ),
+                title=f"Évolution du % mention Très Bien — {_esc(str(result['prenom']))} {_esc(str(result['sexe_label']))}",
+                xaxis=dict(title="", tickformat="d", dtick=1),
                 yaxis=dict(
                     title="% Mention TB",
                     rangemode="tozero",
-                    showgrid=True, gridcolor="rgba(197,197,213,0.25)",
-                    zeroline=False, showline=False,
+                    showgrid=True,
                     tickformat=".0f", ticksuffix=" %",
-                    tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
                 ),
-                legend=dict(
-                    orientation="h", yanchor="bottom", y=1.02,
-                    xanchor="right", x=1,
-                    font=dict(family="Inter, sans-serif", size=11),
-                ),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                 hovermode="x unified",
                 height=360,
             )
@@ -396,25 +369,10 @@ def _render_tab_duel() -> None:
                 line=dict(width=2.5),
             )
             fig.update_layout(
-                paper_bgcolor=SURFACE,
-                plot_bgcolor=SURFACE,
                 hovermode="x unified",
                 height=360,
-                xaxis=dict(
-                    tickformat="d", dtick=1,
-                    showgrid=False, zeroline=False, showline=False,
-                    tickfont=dict(family="Inter, sans-serif", size=10),
-                ),
-                yaxis=dict(
-                    showgrid=True, gridcolor="rgba(197,197,213,0.25)",
-                    zeroline=False, showline=False,
-                    tickformat=".0f", ticksuffix=" %",
-                    tickfont=dict(family="Inter, sans-serif", size=10),
-                ),
-                title=dict(
-                    font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
-                    x=0, xanchor="left",
-                ),
+                xaxis=dict(tickformat="d", dtick=1),
+                yaxis=dict(showgrid=True, tickformat=".0f", ticksuffix=" %"),
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -460,40 +418,23 @@ def _render_tab_tendances() -> None:
         sorted_top["label"] = sorted_top["prenom"] + "  (" + sorted_top["N"].astype(str) + ")"
         n = len(sorted_top)
 
-        bar_colors = [
-            f"rgba(0,19,96,{0.30 + 0.65 * i / max(n - 1, 1):.2f})" for i in range(n)
-        ]
-
         fig = go.Figure(go.Bar(
             y=sorted_top["label"],
             x=sorted_top["proptb"],
             orientation="h",
-            marker=dict(color=bar_colors, line=dict(width=0)),
+            marker=dict(color=gradient_blue(n)),
             text=[f"{v:.1f} %" for v in sorted_top["proptb"]],
             textposition="outside",
-            textfont=dict(family="Inter, system-ui, sans-serif", size=10, color="#444653"),
             hovertemplate="<b>%{y}</b><br>% Mention TB : %{x:.1f} %<extra></extra>",
         ))
         fig.update_layout(
-            paper_bgcolor=SURFACE,
-            plot_bgcolor=SURFACE,
-            title=dict(
-                text=f"Top {n_top} — % mention Très Bien · {year_sel}",
-                font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
-                x=0, xanchor="left",
-            ),
+            title=f"Top {n_top} — % mention Très Bien · {year_sel}",
             xaxis=dict(
-                showgrid=False, zeroline=False, showline=False,
-                title="",
-                tickformat=".0f", ticksuffix=" %",
+                title="", tickformat=".0f", ticksuffix=" %",
                 range=[0, sorted_top["proptb"].max() * 1.18],
-                tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
             ),
-            yaxis=dict(
-                showgrid=False, zeroline=False, showline=False,
-                title="", categoryorder="total ascending",
-                tickfont=dict(family="Inter, sans-serif", size=11, color="#1b1c1a"),
-            ),
+            yaxis=dict(title="", categoryorder="total ascending",
+                       tickfont=dict(size=11, color=ON_SURF)),
             margin=dict(l=0, r=60, t=48, b=16),
             height=max(420, n_top * 38),
         )
@@ -599,7 +540,6 @@ def _render_tab_carto() -> None:
                 height=550,
                 coloraxis_colorbar=dict(title="Indice", tickformat=".1f"),
                 margin=dict(l=0, r=0, t=48, b=0),
-                paper_bgcolor=SURFACE,
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -641,18 +581,13 @@ def _render_tab_palmares() -> None:
     else:
         # Vue globale : score moyen par décennie
         sorted_dec = dec_sum.sort_values("score_moyen").copy()
-        n_dec = len(sorted_dec)
-        dec_bar_colors = [
-            f"rgba(0,19,96,{0.30 + 0.65 * i / max(n_dec - 1, 1):.2f})" for i in range(n_dec)
-        ]
         fig_bar = go.Figure(go.Bar(
             y=sorted_dec["decade_label"],
             x=sorted_dec["score_moyen"],
             orientation="h",
-            marker=dict(color=dec_bar_colors, line=dict(width=0)),
+            marker=dict(color=gradient_blue(len(sorted_dec))),
             text=[f"{v:.1f} %" for v in sorted_dec["score_moyen"]],
             textposition="outside",
-            textfont=dict(family="Inter, sans-serif", size=11, color="#444653"),
             customdata=sorted_dec[["nb_prenoms", "top_prenom", "bottom_prenom"]].values,
             hovertemplate=(
                 "<b>%{y}</b><br>Score moyen : %{x:.1f} %<br>"
@@ -661,24 +596,13 @@ def _render_tab_palmares() -> None:
             ),
         ))
         fig_bar.update_layout(
-            paper_bgcolor=SURFACE,
-            plot_bgcolor=SURFACE,
-            title=dict(
-                text="Score moyen de mention TB par génération",
-                font=dict(family="Newsreader, Georgia, serif", size=18, color=PRIMARY),
-                x=0, xanchor="left",
-            ),
+            title="Score moyen de mention TB par génération",
             xaxis=dict(
-                showgrid=False, zeroline=False, showline=False,
                 title="", tickformat=".1f", ticksuffix=" %",
                 range=[0, sorted_dec["score_moyen"].max() * 1.2],
-                tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
             ),
-            yaxis=dict(
-                showgrid=False, zeroline=False, showline=False,
-                title="", categoryorder="total ascending",
-                tickfont=dict(family="Inter, sans-serif", size=12, color="#1b1c1a"),
-            ),
+            yaxis=dict(title="", categoryorder="total ascending",
+                       tickfont=dict(size=12, color=ON_SURF)),
             margin=dict(l=0, r=60, t=48, b=16),
             height=380,
         )
@@ -709,20 +633,10 @@ def _render_tab_palmares() -> None:
             line=dict(width=1.5),
         )
         fig_box.update_layout(
-            paper_bgcolor=SURFACE,
-            plot_bgcolor=SURFACE,
             showlegend=False,
             height=380,
-            xaxis=dict(
-                showgrid=False, zeroline=False, showline=False,
-                tickfont=dict(family="Inter, sans-serif", size=11),
-            ),
-            yaxis=dict(
-                showgrid=True, gridcolor="rgba(197,197,213,0.25)",
-                zeroline=False, showline=False,
-                tickformat=".0f", ticksuffix=" %",
-                tickfont=dict(family="Inter, sans-serif", size=10, color="#444653"),
-            ),
+            xaxis=dict(tickfont=dict(size=11)),
+            yaxis=dict(showgrid=True, tickformat=".0f", ticksuffix=" %"),
         )
         st.plotly_chart(fig_box, use_container_width=True)
 
