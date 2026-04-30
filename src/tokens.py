@@ -43,9 +43,11 @@ ON_PRIMARY_EYEBROW = "rgba(186,195,255,0.7)"   # eyebrow sur Royal Blue
 GOLD_ACCENT        = "#fed488"                  # accent (étoiles, victoire)
 
 # Outlines neutres (charts, dividers)
-OUTLINE       = "rgba(197,197,213,0.4)"
-OUTLINE_VAR   = "rgba(197,197,213,0.3)"
-OUTLINE_FAINT = "rgba(197,197,213,0.25)"
+OUTLINE_FILL   = "rgba(197,197,213,0.08)"   # fond d'area fill
+OUTLINE_FAINT  = "rgba(197,197,213,0.25)"   # grille chart
+OUTLINE_VAR    = "rgba(197,197,213,0.3)"    # dividers UI
+OUTLINE        = "rgba(197,197,213,0.4)"    # axis lines
+OUTLINE_STRONG = "rgba(197,197,213,0.6)"    # hover border / trait principal
 
 # PRIMARY avec opacité (dérivés — pour borders et fonds discrets)
 PRIMARY_A_08 = "rgba(0,19,96,0.08)"

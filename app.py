@@ -40,12 +40,15 @@ from src.insee import load_dpt, load_nat
 from src.loader import load_long
 from src.normalize import normalize
 from src.plotly_theme import (
+    COLOR_SEQ,
+    COLORSCALE,
     ON_SURF,
     PRIMARY as _P,
     SECONDARY as _S,
     apply_theme,
     gradient_blue,
 )
+from src.tokens import OUTLINE_FILL, OUTLINE_STRONG
 from src.scoring import compute_scores, lookup
 from src.styles import PRIMARY, SECONDARY, SURFACE, inject_css
 
@@ -270,9 +273,9 @@ def _render_tab_anthologie() -> None:
                 y=nat_avg["proptb_nat"],
                 mode="lines",
                 name="Moyenne nationale",
-                line=dict(color="rgba(197,197,213,0.6)", width=1.5, dash="dot"),
+                line=dict(color=OUTLINE_STRONG, width=1.5, dash="dot"),
                 fill="tozeroy",
-                fillcolor="rgba(197,197,213,0.08)",
+                fillcolor=OUTLINE_FILL,
                 hovertemplate="%{y:.1f} %<extra>Moy. nationale</extra>",
             ))
 
@@ -511,12 +514,7 @@ def _render_tab_carto() -> None:
                 locations="dpt",
                 featureidkey="properties.code",
                 color="indice",
-                color_continuous_scale=[
-                    [0.0,  "#faf9f5"],
-                    [0.3,  "#b8c0e0"],
-                    [0.6,  "#506aaa"],
-                    [1.0,  "#001360"],
-                ],
+                color_continuous_scale=COLORSCALE,
                 range_color=[0, dept_data["indice"].quantile(0.95)],
                 hover_name="dpt",
                 hover_data={
@@ -606,12 +604,8 @@ def _render_tab_palmares() -> None:
         st.plotly_chart(fig_bar, use_container_width=True)
 
         # Distribution (boxplot)
-        DECADE_PALETTE = [
-            "#001360", "#2d4de0", "#506aaa", "#775a19",
-            "#b58900", "#3a6ea5", "#5f6a8a", "#a07830",
-        ]
         decade_colors = {
-            label: DECADE_PALETTE[i % len(DECADE_PALETTE)]
+            label: COLOR_SEQ[i % len(COLOR_SEQ)]
             for i, label in enumerate(sorted(dec_scores["decade_label"].unique()))
         }
         fig_box = px.box(

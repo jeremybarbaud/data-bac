@@ -13,6 +13,8 @@ neutraliser les XSS (unsafe_allow_html=True est actif).
 
 from html import escape as _esc
 
+from src.tokens import PRIMARY, PRIMARY_A_40
+
 
 # ── Utilitaires internes ───────────────────────────────────────────────────────
 
@@ -237,8 +239,8 @@ def duel_cards_html(res_a: dict, res_b: dict) -> str:
 
     class_a  = "es-duel-card winner" if (a_wins and not tie) else "es-duel-card"
     class_b  = "es-duel-card winner" if (not a_wins and not tie) else "es-duel-card"
-    fill_a   = "#001360" if (a_wins or tie) else "rgba(0,19,96,0.4)"
-    fill_b   = "#001360" if (not a_wins or tie) else "rgba(0,19,96,0.4)"
+    fill_a   = PRIMARY if (a_wins or tie) else PRIMARY_A_40
+    fill_b   = PRIMARY if (not a_wins or tie) else PRIMARY_A_40
 
     name_a = _esc(str(res_a["prenom"]))
     name_b = _esc(str(res_b["prenom"]))
